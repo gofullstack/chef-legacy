@@ -47,12 +47,16 @@ def import_cookbooks_with_versions_and_platforms
     row = row.to_hash
     category = Category.with_name(row['category_name']).first!
 
+    if URI(row['external_url']).is_a?(URI::Generic)
+      well_formed_external_url = ('http://' + row['external_url'])
+    end
+
     cookbook = Cookbook.new(
       name: row['name'],
       maintainer: 'john@example.com',
       description: row['description'],
       category: category,
-      external_url: row['external_url'],
+      source_url: well_formed_external_url || row['external_url'],
       download_count: row['download_count'],
       deprecated: row['deprecated']
     )
