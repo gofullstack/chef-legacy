@@ -1,16 +1,17 @@
 require 'mysql2'
 require 'ruby-progressbar'
-
-DB = Mysql2::Client.new(
-  host: ENV['LEGACY_DB_HOST'] || 'localhost',
-  username: ENV['LEGACY_DB_USERNAME'] || 'root',
-  database: ENV['LEGACY_DB_DATABASE'] || 'opscode_community_site_production'
-)
+require 'supermarket/import/database_configuration'
 
 namespace :supermarket do
   namespace :import do
+    task :connect do
+      Supermarket::Import::DB = Mysql2::Client.new(
+        Supermarket::Import::DatabaseConfiguration.community_site.to_h
+      )
+    end
+
     desc 'Import community cookbook categories'
-    task :categories => :environment do
+    task :categories => [:connect, :environment] do
       puts "Importing Categories"
 
       progress_bar = ProgressBar.create(total: categories.count)
@@ -127,17 +128,21 @@ def build_supported_platforms(cookbook_version_id)
 end
 
 def categories
-  @categories ||= DB.query('select * from categories').to_a
+  @categories ||= all('categories')
 end
 
 def cookbooks
-  @cookbooks ||= DB.query('select * from cookbooks').to_a
+  @cookbooks ||= all('cookbooks')
 end
 
 def cookbook_versions
-  @cookbook_versions ||= DB.query('select * from cookbook_versions').to_a
+  @cookbook_versions ||= all('cookbook_versions')
 end
 
 def platform_versions
-  @platform_versions ||= DB.query('select * from platform_versions').to_a
+  @platform_versions ||= all('platform_versions')
+end
+
+def all(table)
+  Supermarket::Import::DB.query("select * from #{table}").to_a
 end
