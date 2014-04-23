@@ -22,4 +22,4 @@ The data import connects to the old MySQL database. The default configuration sh
 
 ## Usage
 
-`bundle exec rake chef_legacy:import`
+`bundle exec rake supermarket:import:cookbooks`

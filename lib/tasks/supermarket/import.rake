@@ -7,12 +7,14 @@ DB = Mysql2::Client.new(
   database: ENV['LEGACY_DB_DATABASE'] || 'opscode_community_site_production'
 )
 
-namespace :chef_legacy do
-  desc 'Import legacy community site data from CSV files.'
-  task :import => :environment do
-    progress_bar = ProgressBar.create(total: cookbooks.count)
+namespace :supermarket do
+  namespace :import do
+    desc 'Import community cookbook records'
+    task :cookbooks => :environment do
+      progress_bar = ProgressBar.create(total: cookbooks.count)
 
-    import_cookbooks_with_versions_and_platforms(progress_bar)
+      import_cookbooks_with_versions_and_platforms(progress_bar)
+    end
   end
 end
 
