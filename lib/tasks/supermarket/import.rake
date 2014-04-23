@@ -141,10 +141,3 @@ end
 def platform_versions
   @platform_versions ||= DB.query('select * from platform_versions').to_a
 end
-
-#
-# Parses a given CSV file found in the data directory.
-#
-def parse_csv(filename)
-  CSV.parse(File.read(File.join(File.dirname(__FILE__), "data/#{filename}")), headers: true)
-end
