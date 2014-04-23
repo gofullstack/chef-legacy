@@ -9,8 +9,19 @@ DB = Mysql2::Client.new(
 
 namespace :supermarket do
   namespace :import do
+    desc 'Import community cookbook categories'
+    task :categories => :environment do
+      puts "Importing Categories"
+
+      progress_bar = ProgressBar.create(total: categories.count)
+
+      import_categories(progress_bar)
+    end
+
     desc 'Import community cookbook records'
-    task :cookbooks => :environment do
+    task :cookbooks => :categories do
+      puts "Importing Cookbook Data"
+
       progress_bar = ProgressBar.create(total: cookbooks.count)
 
       import_cookbooks_with_versions_and_platforms(progress_bar)
@@ -18,23 +29,16 @@ namespace :supermarket do
   end
 end
 
-#
-# Parses cookbooks.csv, cookbook_versions.csv and
-# platform_versions.csv Then the cookbooks and their dependencies
-# (Category and CookbookVersion) are associated/created. The cookbook
-# Category is found by using a column in each cookbook row named category_name
-# derived from joining the categories and cookbooks table from the original
-# legacy database. For each cookbook row the corresponding cookbook version
-# rows are found by selecting rows from cookbook_versions.csv
-# where the column cookbook_id matches the current cookbook row id.
-# Each instance of CookbookVersion is created with a hard coded
-# tarball_content_type of application/x-gzip because of inconsistencies
-# in the legacy database application/x-gzip is the desired content type
-# as all of the legacy tarballs are tgz files. For each CookbookVersion
-# the supported platforms are created and associated by finding the corresponding
-# platform version rows by matching the current cookbook version row id with the
-# platform version row id.
-#
+def import_categories(progress_bar)
+  categories.each do |row|
+    progress_bar.increment
+
+    next if Category.with_name(row['name']).first
+
+    Category.create!(name: row['name'])
+  end
+end
+
 def import_cookbooks_with_versions_and_platforms(progress_bar)
   cookbooks.each do |row|
     progress_bar.increment
@@ -45,7 +49,7 @@ def import_cookbooks_with_versions_and_platforms(progress_bar)
       category['id'] == row['category_id']
     end.fetch('name')
 
-    category = Category.with_name(category_name).first_or_initialize
+    category = Category.with_name(category_name).first!
 
     if row['external_url'].to_s.strip.size > 0
       external_url = URI(row['external_url'])
