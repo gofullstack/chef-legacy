@@ -4,41 +4,47 @@ require 'tempfile'
 
 module Supermarket
   module Import
-    class CookbookDependencies
-      def initialize(cookbook_row, cookbook_version_row)
-        @cookbook_row = cookbook_row
-        @cookbook_version_row = cookbook_version_row
-        @cookbook = Cookbook.with_name(cookbook_row['name']).first!
-        @cookbook_version = @cookbook.cookbook_versions.find_by!(version: cookbook_version_row['version'])
+    class CookbookVersionDependencies
+      def self.import(record)
+        new(record).call
+      end
+
+      def initialize(record)
+        @record = record
+        @cookbook_record = record.cookbook
+        @cookbook = ::Cookbook.with_name(@cookbook_record.name).first!
+        @cookbook_version = @cookbook.cookbook_versions.find_by!(
+          version: record.version
+        )
         @constraint_updates = {
           '>>' => '>',
           '<<' => '<'
         }
       end
 
-      def necessary?
-        !@cookbook_version.dependencies_imported?
+      def complete?
+        @cookbook_version.dependencies_imported?
       end
 
-      def call
+      def call(force = false)
+        if complete?
+          return unless force
+        end
+
         fetch_metadata do |metadata|
-          dependencies = metadata.dependencies
-
-          existing_cookbooks = Cookbook.where(name: dependencies.keys)
-
-          dependencies.each do |name, constraint|
-            updated_constraints = Array(constraint).map do |c|
-              @constraint_updates.reduce(c) do |updated, (old, new)|
+          metadata.dependencies.each do |name, constraint|
+            constraints = Array(constraint).map do |original|
+              @constraint_updates.reduce(original) do |updated, (old, new)|
                 updated.gsub(old, new)
               end
             end
 
-            safe_constraint = Chef::VersionConstraint.new(updated_constraints)
+            safe_constraint = Chef::VersionConstraint.new(constraints)
 
             @cookbook_version.cookbook_dependencies.create!(
               name: name,
               version_constraint: safe_constraint.to_s,
-              cookbook: existing_cookbooks.find { |c| c.name == name }
+              cookbook: ::Cookbook.with_name(name).first
             )
           end
 
@@ -52,7 +58,7 @@ module Supermarket
         end
 
         Net::HTTP.start('s3.amazonaws.com', 80) do |http|
-          http.request(Net::HTTP::Get.new(artifact_path)) do |response|
+          http.request(Net::HTTP::Get.new(@record.artifact_path)) do |response|
             response.read_body do |chunk|
               tarball.write(chunk)
             end
@@ -70,19 +76,6 @@ module Supermarket
         else
           parameters.metadata
         end
-      end
-
-      private
-
-      def artifact_path
-        id = @cookbook_version_row['id']
-        tarball_file_name = @cookbook_version_row['tarball_file_name']
-
-        unless tarball_file_name.include?('.')
-          tarball_file_name << '.'
-        end
-
-        "/community-files.opscode.com/cookbook_versions/tarballs/#{id}/original/#{tarball_file_name}"
       end
     end
   end

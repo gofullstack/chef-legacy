@@ -1,7 +1,7 @@
 require 'uri'
 
 module Supermarket
-  module Import
+  module CommunitySite
     class DatabaseConfiguration
       def self.community_site
         url = ENV.fetch('COMMUNITY_SITE_DATABASE_URL') do

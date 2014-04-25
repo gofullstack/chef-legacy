@@ -1,185 +1,68 @@
 require 'chef/exceptions'
-require 'mysql2'
 require 'ruby-progressbar'
-require 'supermarket/import/cookbook_dependencies'
-require 'supermarket/import/database_configuration'
+require 'supermarket/community_site'
+require 'supermarket/import'
 
 namespace :supermarket do
   namespace :import do
-    desc 'Import community cookbook categories'
-    task :categories => [:connect, :environment] do
-      progress_bar = ProgressBar.create(
-        title: 'Categories',
-        total: categories.count
-      )
+    #
+    # Convenience method for import task boilerplate. In particular, each
+    # import operation is wrapped in an ActiveRecord transaction. If the import
+    # raises an error, we rollback the transaction, and log the error message,
+    # but the import does not fail.
+    #
+    # @param title [String] the progress bar title
+    # @param type [Enumerable] that which enumerates the existing community
+    #   site data
+    # @param importer [.import] that which imports a single record from the
+    #   existing community site
+    #
+    def import!(title, type, importer)
+      progress_bar = ProgressBar.create(title: title, total: type.count)
 
-      import_categories(progress_bar)
-    end
+      type.each do |record|
+        progress_bar.increment
 
-    desc 'Import community cookbook records'
-    task :cookbooks => :categories do
-      progress_bar = ProgressBar.create(
-        title: 'Cookbooks',
-        total: cookbooks.count
-      )
+        ActiveRecord::Base.transaction do
+          begin
+            importer.import(record)
+          rescue => e
+            message_header = "#{e.class}: #{e.message}"
+            message_body = ([message_header] + e.backtrace).join("\n  ")
+            progress_bar.log message_body
 
-      import_cookbooks_with_versions_and_platforms(progress_bar)
-    end
-
-    desc 'Import cookbook dependency relationships'
-    task :cookbook_dependencies => :cookbooks do
-      progress_bar = ProgressBar.create(
-        title: 'Cookbook Dependency Relationships',
-        total: cookbook_versions.count
-      )
-
-      cookbooks.each do |cookbook_row|
-        cookbook_versions.select do |cookbook_version_row|
-          cookbook_version_row['cookbook_id'] == cookbook_row['id']
-        end.each do |cookbook_version_row|
-          progress_bar.increment
-
-          operation = Supermarket::Import::CookbookDependencies.new(
-            cookbook_row,
-            cookbook_version_row
-          )
-
-          if operation.necessary?
-            ActiveRecord::Base.transaction do
-              begin
-                operation.call
-              rescue Chef::Exceptions::InvalidVersionConstraint => e
-                progress_bar.log "#{cookbook_row['name']}: #{e.message}"
-
-                raise ActiveRecord::Rollback
-              end
-            end
+            raise ActiveRecord::Rollback
           end
         end
       end
     end
 
-    task :connect do
-      Supermarket::Import::DB = Mysql2::Client.new(
-        Supermarket::Import::DatabaseConfiguration.community_site.to_h
-      )
-    end
-  end
-end
-
-def import_categories(progress_bar)
-  categories.each do |row|
-    progress_bar.increment
-
-    next if Category.with_name(row['name']).first
-
-    Category.create!(name: row['name'])
-  end
-end
-
-def import_cookbooks_with_versions_and_platforms(progress_bar)
-  cookbooks.each do |row|
-    progress_bar.increment
-
-    next if Cookbook.with_name(row['name']).first
-
-    category_name = categories.find do |category|
-      category['id'] == row['category_id']
-    end.fetch('name')
-
-    category = Category.with_name(category_name).first!
-
-    if row['external_url'].to_s.strip.size > 0
-      external_url = URI(row['external_url'])
-
-      unless external_url.is_a?(URI::HTTP) || external_url.is_a?(URI::HTTPS)
-        external_url = URI('http://' + row['external_url'])
-      end
-    else
-      external_url = nil
+    desc 'Import community cookbook categories'
+    task :categories => :environment do
+      import! 'Categories',
+        Supermarket::CommunitySite::CategoryRecord,
+        Supermarket::Import::Category
     end
 
-    cookbook = Cookbook.new(
-      name: row['name'],
-      maintainer: 'john@example.com',
-      description: row['description'],
-      category: category,
-      source_url: external_url.to_s,
-      download_count: row['download_count'],
-      deprecated: row['deprecated'],
-    )
-
-    build_cookbook_versions(row['id']).each do |cookbook_version|
-      cookbook_version.cookbook = cookbook
-      cookbook.cookbook_versions << cookbook_version
+    desc 'Import community cookbook records'
+    task :cookbooks => :categories do
+      import! 'Cookbooks',
+        Supermarket::CommunitySite::CookbookRecord,
+        Supermarket::Import::Cookbook
     end
 
-    cookbook.save!
-  end
-end
-
-def build_cookbook_versions(cookbook_id)
-  cookbook_versions.
-    select { |v| v['cookbook_id'] == cookbook_id }.
-    map do |version|
-
-    CookbookVersion.new(
-      version: version['version'],
-      license: version['license'],
-      tarball_file_name: version['tarball_file_name'],
-      tarball_content_type: 'application/x-gzip',
-      tarball_file_size: version['tarball_file_size'],
-      tarball_updated_at: version['tarball_updated_at'],
-      download_count: version['download_count'],
-    ).tap do |cookbook_version|
-      build_supported_platforms(version['id']).each do |supported_platform|
-        supported_platform.cookbook_version = cookbook_version
-        cookbook_version.supported_platforms << supported_platform
-      end
-    end
-  end
-end
-
-def build_supported_platforms(cookbook_version_id)
-  platform_versions.
-    select { |p| p['cookbook_version_id'] == cookbook_version_id }.
-    map do |platform|
-
-    version_constraint = platform['version'] || '>= 0.0.0'
-
-    if version_constraint != '>=0.0.0'
-      numeric_part = version_constraint.split(' ').last
-
-      if numeric_part.size == 1
-        version_constraint << '.0' # Corrects, e.g., '~> 5' to '~> 5.0'
-      end
-    else
-      version_constraint = '>= 0.0.0'
+    desc 'Import cookbook version supported platforms'
+    task :supported_platforms => :cookbooks do
+      import! 'Supported Platform Records',
+        Supermarket::CommunitySite::PlatformVersionRecord,
+        Supermarket::Import::PlatformVersion
     end
 
-    SupportedPlatform.new(
-      name: platform['platform'],
-      version_constraint: version_constraint
-    )
+    desc 'Import cookbook dependency relationships'
+    task :cookbook_dependencies => :cookbooks do
+      import! 'Cookbook Dependency Relationships',
+        Supermarket::CommunitySite::CookbookVersionRecord,
+        Supermarket::Import::CookbookVersionDependencies
+    end
   end
-end
-
-def categories
-  @categories ||= all('categories')
-end
-
-def cookbooks
-  @cookbooks ||= all('cookbooks')
-end
-
-def cookbook_versions
-  @cookbook_versions ||= all('cookbook_versions')
-end
-
-def platform_versions
-  @platform_versions ||= all('platform_versions')
-end
-
-def all(table)
-  Supermarket::Import::DB.query("select * from #{table}").to_a
 end
