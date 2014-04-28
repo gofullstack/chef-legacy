@@ -1,4 +1,7 @@
-require 'supermarket/community_site/category_record'
-require 'supermarket/community_site/cookbook_record'
-require 'supermarket/community_site/cookbook_version_record'
-require 'supermarket/community_site/platform_version_record'
+File.dirname(__FILE__).tap do |supermarket|
+  Dir[File.join(supermarket, 'community_site', '*_record.rb')].map do |file|
+    file.split(File::SEPARATOR).last.split('.').first
+  end.each do |record_type|
+    require "supermarket/community_site/#{record_type}"
+  end
+end

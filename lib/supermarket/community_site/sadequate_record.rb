@@ -26,7 +26,9 @@ module Supermarket
             send(:attr_accessor, field.to_sym)
           end
 
-          define_singleton_method(:sadequate_fields) { fields }
+          define_singleton_method(:sadequate_sanitized_fields) do
+            fields.map { |field| "`#{field}`" }
+          end
 
           define_method(:initialize) do |data = {}|
             data.select do |field, _|
@@ -58,10 +60,10 @@ module Supermarket
           define_method(collection) do
             real_record_type = Supermarket::CommunitySite.const_get(record_type)
 
-            fields = real_record_type.sadequate_fields.join(', ')
+            fields = real_record_type.sadequate_sanitized_fields.join(', ')
 
             query_template = %{
-              SELECT %s FROM #{collection}
+              SELECT %s FROM #{real_record_type.sadequate_table_name}
               WHERE #{foreign_key} = %d ORDER BY id
             }.squish
 
@@ -91,10 +93,17 @@ module Supermarket
       #
       module BelongsTo
         def belongs_to(name, record_type, foreign_key)
+          result_ivar = "@_sadequate_#{name}"
+          fetched_state_ivar = "@_sadequate_fetched_#{name}"
+
           define_method(name) do
+            if instance_variable_get(fetched_state_ivar)
+              return instance_variable_get(result_ivar)
+            end
+
             real_record_type = Supermarket::CommunitySite.const_get(record_type)
 
-            fields = real_record_type.sadequate_fields.join(', ')
+            fields = real_record_type.sadequate_sanitized_fields.join(', ')
 
             query_template = %{
               SELECT %s FROM #{real_record_type.sadequate_table_name}
@@ -105,8 +114,60 @@ module Supermarket
               connection.query(query_template % [fields, send(foreign_key)]).to_a
             end.first
 
+            instance_variable_set(fetched_state_ivar, true)
+
             if record_data
-              real_record_type.new(record_data)
+              real_record_type.new(record_data).tap do |record|
+                instance_variable_set(result_ivar, record)
+              end
+            end
+          end
+        end
+      end
+
+      #
+      # Provides a single class macro, +has_one+ which is way less powerful
+      # than ActiveRecord's.
+      #
+      # @example
+      #   class User
+      #     extend SadequateRecord::HasOne
+      #
+      #     has_one :profile, ProfileRecord, :user_id
+      #   end
+      #
+      #   user = User.new
+      #   user.profile #=> #<ProfileRecord...>
+      #
+      module HasOne
+        def has_one(name, record_type, foreign_key)
+          result_ivar = "@_sadequate_#{name}"
+          fetched_state_ivar = "@_sadequate_fetched_#{name}"
+
+          define_method(name) do
+            if instance_variable_get(fetched_state_ivar)
+              return instance_variable_get(result_ivar)
+            end
+
+            real_record_type = Supermarket::CommunitySite.const_get(record_type)
+
+            fields = real_record_type.sadequate_sanitized_fields.join(', ')
+
+            query_template = %{
+              SELECT %s FROM #{real_record_type.sadequate_table_name}
+              WHERE #{foreign_key} = %d
+            }.squish
+
+            record_data = Pool.with do |connection|
+              connection.query(query_template % [fields, self.id]).to_a
+            end.first
+
+            instance_variable_set(fetched_state_ivar, true)
+
+            if record_data
+              real_record_type.new(record_data).tap do |record|
+                instance_variable_set(result_ivar, record)
+              end
             end
           end
         end
@@ -135,17 +196,19 @@ module Supermarket
           end
 
           define_method(:record_at_offset) do |offset|
+            Pool.with do |connection|
+              connection.query(offset_query(offset)).to_a.first
+            end
+          end
+
+          define_method(:offset_query) do |offset|
             real_record_type = Supermarket::CommunitySite.const_get(record_type)
 
             query = "SELECT %s FROM #{name} ORDER BY id LIMIT 1 OFFSET %d"
-            offset_query = query % [
-              real_record_type.sadequate_fields.join(', '),
+            query % [
+              real_record_type.sadequate_sanitized_fields.join(', '),
               offset
             ]
-
-            Pool.with do |connection|
-              connection.query(offset_query).to_a.first
-            end
           end
 
           define_method(:each) do |&block|

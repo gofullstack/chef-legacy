@@ -44,6 +44,13 @@ namespace :supermarket do
         Supermarket::Import::Category
     end
 
+    desc 'Import community site user accounts'
+    task :users => :environment do
+      import! 'Users',
+        Supermarket::CommunitySite::UserRecord,
+        Supermarket::Import::User
+    end
+
     desc 'Import community cookbook records'
     task :cookbooks => :categories do
       import! 'Cookbooks',
