@@ -1,3 +1,4 @@
+require 'active_support/core_ext/string/filters'
 require 'supermarket/community_site/pool'
 
 module Supermarket

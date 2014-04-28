@@ -58,6 +58,13 @@ namespace :supermarket do
         Supermarket::Import::Cookbook
     end
 
+    desc 'Import cookbook following records'
+    task :cookbook_following => [:cookbooks, :users] do
+      import! 'Cookbook Following',
+        Supermarket::CommunitySite::FollowingRecord,
+        Supermarket::Import::Following
+    end
+
     desc 'Import cookbook version supported platforms'
     task :supported_platforms => :cookbooks do
       import! 'Supported Platform Records',
