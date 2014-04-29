@@ -52,7 +52,7 @@ namespace :supermarket do
     end
 
     desc 'Import community cookbook records'
-    task :cookbooks => :categories do
+    task :cookbooks => [:users, :categories] do
       import! 'Cookbooks',
         Supermarket::CommunitySite::CookbookRecord,
         Supermarket::Import::Cookbook
