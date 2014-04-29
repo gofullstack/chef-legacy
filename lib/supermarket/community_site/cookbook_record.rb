@@ -13,10 +13,11 @@ module Supermarket
       extend SadequateRecord::BelongsTo
 
       fields :id, :name, :description, :download_count, :external_url,
-        :deprecated, :category_id
+        :deprecated, :category_id, :maintainer_id
 
       has_many :cookbook_versions, :CookbookVersionRecord, :cookbook_id
       belongs_to :category, :CategoryRecord, :category_id
+      belongs_to :maintainer, :UserRecord, :maintainer_id
 
       def sanitized_external_url
         if external_url.to_s.strip.size > 0

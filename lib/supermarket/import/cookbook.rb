@@ -19,12 +19,18 @@ module Supermarket
         end
 
         category = ::Category.with_name(@record.category.name).first!
+        owner = ::Account.
+          for('chef_oauth2').
+          with_username(@record.maintainer.unique_name).
+          first!.
+          user
 
         cookbook = ::Cookbook.new(
           name: @record.name,
           maintainer: 'john@example.com',
           description: @record.description,
           category: category,
+          owner: owner,
           source_url: @record.sanitized_external_url.to_s,
           download_count: @record.download_count,
           deprecated: @record.deprecated
