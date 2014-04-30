@@ -32,6 +32,8 @@ module Supermarket
         end
 
         fetch_metadata do |metadata|
+          @cookbook.update_attribute(:maintainer, metadata.maintainer)
+
           metadata.dependencies.each do |name, constraint|
             constraints = Array(constraint).map do |original|
               @constraint_updates.reduce(original) do |updated, (old, new)|
