@@ -11,7 +11,8 @@ module Supermarket
       extend SadequateRecord::Record
       extend SadequateRecord::BelongsTo
 
-      fields :id, :platform, :version, :cookbook_version_id
+      fields :id, :platform, :version, :cookbook_version_id, :created_at,
+        :updated_at
 
       belongs_to :cookbook_version, :CookbookVersionRecord, :cookbook_version_id
 

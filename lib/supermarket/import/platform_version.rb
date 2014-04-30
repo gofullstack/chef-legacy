@@ -34,10 +34,15 @@ module Supermarket
           return unless force
         end
 
-        cookbook_version.supported_platforms.create!(
+        cookbook_version.supported_platforms.build(
           name: @record.platform,
-          version_constraint: @record.version_constraint
-        )
+          version_constraint: @record.version_constraint,
+          created_at: @record.created_at,
+          updated_at: @record.updated_at
+        ).tap do |platform|
+          platform.record_timestamps = false
+          platform.save!
+        end
       end
     end
   end
