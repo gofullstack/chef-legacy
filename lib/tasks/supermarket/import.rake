@@ -78,5 +78,8 @@ namespace :supermarket do
         Supermarket::CommunitySite::CookbookVersionRecord,
         Supermarket::Import::CookbookVersionDependencies
     end
+
+    multitask :all => [:users, :categories, :cookbooks, :cookbook_following,
+                       :supported_platforms, :cookbook_dependencies]
   end
 end
