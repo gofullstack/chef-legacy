@@ -9,16 +9,21 @@ module Supermarket
 
       def initialize(record)
         @record = record
-        cookbook_name = @record.cookbook_version.cookbook.name
-        cookbook_version_number = @record.cookbook_version.version
-        @cookbook = ::Cookbook.with_name(cookbook_name).first!
-        @cookbook_version = cookbook.cookbook_versions.find_by!(
-          version: cookbook_version_number
-        )
+
+        if @record.cookbook_version
+          cookbook_name = @record.cookbook_version.cookbook.name
+          cookbook_version_number = @record.cookbook_version.version
+          @cookbook = ::Cookbook.with_name(cookbook_name).first!
+          @cookbook_version = cookbook.cookbook_versions.find_by!(
+            version: cookbook_version_number
+          )
+        else
+          @skip = true
+        end
       end
 
       def complete?
-        cookbook_version.supported_platforms.where(
+        @skip || cookbook_version.supported_platforms.where(
           name: @record.platform,
           version_constraint: @record.version_constraint
         ).count > 0
