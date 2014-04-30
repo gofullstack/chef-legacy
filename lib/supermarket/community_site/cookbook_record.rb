@@ -13,7 +13,8 @@ module Supermarket
       extend SadequateRecord::BelongsTo
 
       fields :id, :name, :description, :download_count, :external_url,
-        :deprecated, :category_id, :maintainer_id
+        :deprecated, :replacement_id, :category_id, :maintainer_id,
+        :created_at, :updated_at
 
       has_many :cookbook_versions, :CookbookVersionRecord, :cookbook_id
       belongs_to :category, :CategoryRecord, :category_id

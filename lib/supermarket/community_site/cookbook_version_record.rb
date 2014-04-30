@@ -14,7 +14,7 @@ module Supermarket
 
       fields :id, :cookbook_id, :version, :license, :tarball_file_name,
         :tarball_file_size, :tarball_content_type, :tarball_updated_at,
-        :download_count
+        :download_count, :created_at, :updated_at
 
       has_many :platform_versions, :PlatformVersionRecord, :cookbook_version_id
       belongs_to :cookbook, :CookbookRecord, :cookbook_id

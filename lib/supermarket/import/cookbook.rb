@@ -33,8 +33,10 @@ module Supermarket
           owner: owner,
           source_url: @record.sanitized_external_url.to_s,
           download_count: @record.download_count,
-          deprecated: @record.deprecated
-        )
+          deprecated: @record.deprecated,
+          created_at: @record.created_at,
+          updated_at: @record.updated_at
+        ).tap { |c| c.record_timestamps = false }
 
         cookbook_versions = @record.cookbook_versions.map do |record|
           ::CookbookVersion.new(
@@ -45,8 +47,10 @@ module Supermarket
             tarball_file_size: record.tarball_file_size,
             tarball_updated_at: record.tarball_updated_at,
             download_count: record.download_count,
-            cookbook: cookbook
-          )
+            cookbook: cookbook,
+            created_at: record.created_at,
+            updated_at: record.updated_at
+          ).tap { |cv| cv.record_timestamps = false }
         end
 
         cookbook.cookbook_versions = cookbook_versions
