@@ -12,10 +12,12 @@ module Supermarket
       def initialize(record)
         @record = record
         @cookbook_record = record.cookbook
-        @cookbook = ::Cookbook.with_name(@cookbook_record.name).first!
+        @cookbook = ::Cookbook.with_name(@cookbook_record.name).first!.tap do |c|
+          c.record_timestamps = false
+        end
         @cookbook_version = @cookbook.cookbook_versions.find_by!(
           version: record.version
-        )
+        ).tap { |cv| cv.record_timestamps = false }
         @constraint_updates = {
           '>>' => '>',
           '<<' => '<'
