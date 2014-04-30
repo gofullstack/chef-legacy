@@ -19,6 +19,7 @@ module Supermarket
       has_many :cookbook_versions, :CookbookVersionRecord, :cookbook_id
       belongs_to :category, :CategoryRecord, :category_id
       belongs_to :maintainer, :UserRecord, :maintainer_id
+      belongs_to :replacement, :CookbookRecord, :replacement_id
 
       def sanitized_external_url
         if external_url.to_s.strip.size > 0

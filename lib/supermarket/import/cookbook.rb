@@ -33,7 +33,6 @@ module Supermarket
           owner: owner,
           source_url: @record.sanitized_external_url.to_s,
           download_count: @record.download_count,
-          deprecated: @record.deprecated,
           created_at: @record.created_at,
           updated_at: @record.updated_at
         ).tap { |c| c.record_timestamps = false }
