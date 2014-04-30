@@ -29,10 +29,15 @@ module Supermarket
           return unless force
         end
 
-        ::CookbookFollower.create!(
+        ::CookbookFollower.new(
           user_id: user.id,
-          cookbook_id: cookbook.id
-        )
+          cookbook_id: cookbook.id,
+          created_at: @record.created_at,
+          updated_at: @record.updated_at
+        ).tap do |follower|
+          follower.record_timestamps = false
+          follower.save!
+        end
       end
 
       private

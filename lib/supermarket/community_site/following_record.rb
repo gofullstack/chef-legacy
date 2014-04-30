@@ -11,7 +11,8 @@ module Supermarket
       extend SadequateRecord::Record
       extend SadequateRecord::BelongsTo
 
-      fields :id, :user_id, :followable_id, :followable_type
+      fields :id, :user_id, :followable_id, :followable_type, :created_at,
+        :updated_at
 
       belongs_to :user, :UserRecord, :user_id
       # NOTE: punting on polymorphic following for now. As such, the behavior
