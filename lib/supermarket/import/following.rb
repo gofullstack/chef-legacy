@@ -7,9 +7,16 @@ module Supermarket
 
       def initialize(record)
         @record = record
+        @old_user = record.user
+
+        if @old_user.nil?
+          @skip = true
+        end
       end
 
       def complete?
+        return true if @skip
+
         if @record.cookbook?
           imported?
         else
@@ -52,11 +59,9 @@ module Supermarket
       end
 
       def fetch_user
-        old_user = @record.user
-
         ::Account.where(
           provider: 'chef_oauth2',
-          username: old_user.unique_name
+          username: @old_user.unique_name
         ).first!.user
       end
     end
