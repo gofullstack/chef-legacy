@@ -65,6 +65,13 @@ namespace :supermarket do
         Supermarket::Import::Following
     end
 
+    desc 'Import cookbook collaboration records'
+    task :cookbook_collaboration => [:cookbooks, :users] do
+      import! 'Cookbook Collaboration',
+        Supermarket::CommunitySite::CollaborationRecord,
+        Supermarket::Import::Collaboration
+    end
+
     desc 'Import cookbook version supported platforms'
     task :supported_platforms => :cookbooks do
       import! 'Supported Platform Records',
@@ -80,6 +87,7 @@ namespace :supermarket do
     end
 
     multitask :all => [:users, :categories, :cookbooks, :cookbook_following,
-                       :supported_platforms, :cookbook_dependencies]
+                       :supported_platforms, :cookbook_dependencies,
+                       :cookbook_collaboration]
   end
 end
