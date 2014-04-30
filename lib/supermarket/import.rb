@@ -1,5 +1,7 @@
-require 'supermarket/import/category'
-require 'supermarket/import/cookbook'
-require 'supermarket/import/cookbook_dependencies'
-require 'supermarket/import/platform_version'
-require 'supermarket/import/user'
+File.dirname(__FILE__).tap do |supermarket|
+  Dir[File.join(supermarket, 'import', '*.rb')].map do |file|
+    file.split(File::SEPARATOR).last.split('.').first
+  end.each do |name|
+    require "supermarket/import/#{name}"
+  end
+end
