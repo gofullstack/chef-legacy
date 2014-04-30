@@ -63,7 +63,7 @@ module Supermarket
       extend SadequateRecord::HasMany
       extend SadequateRecord::HasOne
 
-      fields :id, :unique_name, :deleted_at
+      fields :id, :unique_name, :deleted_at, :created_at, :updated_at
 
       has_many :email_addresses, :EmailRecord, :user_id
       has_one :profile, :ProfileRecord, :user_id
