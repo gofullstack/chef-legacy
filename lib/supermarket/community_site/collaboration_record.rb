@@ -11,7 +11,7 @@ module Supermarket
       extend SadequateRecord::Record
       extend SadequateRecord::BelongsTo
 
-      fields :id, :user_id, :cookbook_id
+      fields :id, :user_id, :cookbook_id, :created_at, :updated_at
 
       belongs_to :user, :UserRecord, :user_id
       belongs_to :cookbook, :CookbookRecord, :cookbook_id

@@ -22,10 +22,15 @@ module Supermarket
           return unless force
         end
 
-        ::CookbookCollaborator.create!(
+        CookbookCollaborator.new(
           user_id: user.id,
-          cookbook_id: cookbook.id
-        )
+          cookbook_id: cookbook.id,
+          created_at: @record.created_at,
+          updated_at: @record.updated_at
+        ).tap do |cookbook_collaborator|
+          cookbook_collaborator.record_timestamps = false
+          cookbook_collaborator.save!
+        end
       end
 
       private
