@@ -33,7 +33,9 @@ module Supermarket
           return unless force
         end
 
-        fetch_metadata do |metadata|
+        cookbook_upload_parameters do |parameters|
+          metadata = parameters.metadata
+
           @cookbook.update_attribute(:maintainer, metadata.maintainer)
 
           metadata.dependencies.each do |name, constraint|
@@ -52,11 +54,15 @@ module Supermarket
             )
           end
 
-          @cookbook_version.update_attribute(:dependencies_imported, true)
+          @cookbook_version.update_attributes!(
+            dependencies_imported: true,
+            readme: parameters.readme.contents.to_s,
+            readme_extension: parameters.readme.extension.to_s
+          )
         end
       end
 
-      def fetch_metadata
+      def cookbook_upload_parameters
         tarball = Tempfile.new(@cookbook_version.id.to_s, 'tmp').tap do |tb|
           tb.set_encoding 'ASCII-8BIT'
         end
@@ -76,9 +82,9 @@ module Supermarket
         parameters = CookbookUpload::Parameters.new(options)
 
         if block_given?
-          yield parameters.metadata
+          yield parameters
         else
-          parameters.metadata
+          parameters
         end
       end
     end
