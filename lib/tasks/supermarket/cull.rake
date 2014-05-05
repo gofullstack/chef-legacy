@@ -33,7 +33,7 @@ namespace :supermarket do
     end
 
     desc 'Remove any outdated cookbook followers'
-    task :cookbook_following => :cookbooks do
+    task :cookbook_following => [:cookbooks, 'supermarket:import:all'] do
       cull!(
         'Cookbook Following',
         Supermarket::Import::Following,
@@ -42,7 +42,7 @@ namespace :supermarket do
     end
 
     desc 'Remove any outdated cookbook collaborators'
-    task :cookbook_collaboration => :cookbooks do
+    task :cookbook_collaboration => [:cookbooks, 'supermarket:import:all'] do
       cull!(
         'Cookbook Collaboration',
         Supermarket::Import::Collaboration,
@@ -51,7 +51,7 @@ namespace :supermarket do
     end
 
     desc 'Remove any outdated cookbooks'
-    task :cookbooks => :users do
+    task :cookbooks => [:users, 'supermarket:import:all'] do
       cull!(
         'Cookbooks',
         Supermarket::Import::Cookbook,
@@ -60,7 +60,7 @@ namespace :supermarket do
     end
 
     desc 'Remove any outdated users'
-    task :users => :environment do
+    task :users => [:environment, 'supermarket:import:all'] do
       cull!(
         'Users',
         Supermarket::Import::User,

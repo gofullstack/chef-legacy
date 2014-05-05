@@ -4,6 +4,9 @@ require 'supermarket/community_site'
 require 'supermarket/import'
 
 namespace :supermarket do
+  desc 'Migrate data from the old community site to Supermarket'
+  multitask :migrate => ['supermarket:import:all', 'supermarket:cull:all']
+
   namespace :import do
     #
     # Convenience method for import task boilerplate. In particular, each
