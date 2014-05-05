@@ -5,6 +5,7 @@ module ChefLegacy
     railtie_name :chef_data_import
 
     rake_tasks do
+      load "tasks/supermarket/cull.rake"
       load "tasks/supermarket/import.rake"
     end
   end
