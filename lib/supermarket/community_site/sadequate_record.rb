@@ -31,6 +31,10 @@ module Supermarket
             fields.map { |field| "`#{field}`" }
           end
 
+          define_singleton_method(:sadequate_sanitized_field_list) do
+            sadequate_sanitized_fields.join(', ')
+          end
+
           define_method(:initialize) do |data = {}|
             data.select do |field, _|
               fields.map(&:intern).include?(field.intern)
@@ -192,6 +196,10 @@ module Supermarket
       #
       module Table
         def table(name, record_type)
+          define_method(:real_record_type) do
+            Supermarket::CommunitySite.const_get(record_type)
+          end
+
           define_method(:sadequate_table_name) do
             name
           end
@@ -203,8 +211,6 @@ module Supermarket
           end
 
           define_method(:offset_query) do |offset|
-            real_record_type = Supermarket::CommunitySite.const_get(record_type)
-
             query = "SELECT %s FROM #{name} ORDER BY id LIMIT 1 OFFSET %d"
             query % [
               real_record_type.sadequate_sanitized_fields.join(', '),
@@ -213,8 +219,6 @@ module Supermarket
           end
 
           define_method(:each) do |&block|
-            real_record_type = Supermarket::CommunitySite.const_get(record_type)
-
             offset = 0
 
             while data = record_at_offset(offset)

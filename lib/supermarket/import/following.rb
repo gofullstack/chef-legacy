@@ -1,39 +1,34 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class Following
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with %{
+          SELECT followings.id
+          FROM followings
+          INNER JOIN cookbooks ON cookbooks.id = followings.followable_id
+          INNER JOIN users ON users.id = followings.user_id
+          WHERE followable_type='Cookbook'
+        }
+
+        migrate :FollowingRecord => :CookbookFollower
       end
 
       def initialize(record)
         @record = record
         @old_user = record.user
-
-        if @old_user.nil?
-          @skip = true
-        end
       end
 
-      def complete?
-        return true if @skip
-
-        if @record.cookbook?
-          imported?
-        else
-          true
-        end
-      end
-
-      def call(force = false)
-        if complete?
-          return unless force
-        end
-
+      def call
         ::CookbookFollower.new(
           user_id: user.id,
           cookbook_id: cookbook.id,
           created_at: @record.created_at,
-          updated_at: @record.updated_at
+          updated_at: @record.updated_at,
+          legacy_id: @record.id
         ).tap do |follower|
           follower.record_timestamps = false
           follower.save!
@@ -41,13 +36,6 @@ module Supermarket
       end
 
       private
-
-      def imported?
-        ::CookbookFollower.where(
-          user_id: user.id,
-          cookbook_id: cookbook.id
-        ).count > 0
-      end
 
       def cookbook
         @cookbook ||= fetch_cookbook

@@ -1,12 +1,28 @@
 require 'chef/version_constraint'
 require 'net/http'
+require 'supermarket/import/configuration'
 require 'tempfile'
 
 module Supermarket
   module Import
     class CookbookVersionDependencies
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with %{
+          SELECT cookbook_versions.id FROM cookbook_versions
+          INNER JOIN cookbooks ON cookbooks.id = cookbook_versions.cookbook_id
+        }
+
+        # NOTE: the "migrate" abstraction breaks down a bit here. Our
+        # desination isn't CookbookVersion per se, but there is no analogue to
+        # CookbookDependency in the existing Community Site. As such, we track
+        # import state on CookbookVersion.
+        migrate :CookbookVersionRecord => :CookbookVersion
+
+        def imported_legacy_ids
+          ::CookbookVersion.where(dependencies_imported: true, legacy_id: ids).pluck(:legacy_id)
+        end
       end
 
       def initialize(record)
@@ -24,14 +40,8 @@ module Supermarket
         }
       end
 
-      def complete?
-        @cookbook_version.dependencies_imported?
-      end
-
-      def call(force = false)
-        if complete?
-          return unless force
-        end
+      def call
+        return if @cookbook_version.dependencies_imported?
 
         cookbook_upload_parameters do |parameters|
           metadata = parameters.metadata

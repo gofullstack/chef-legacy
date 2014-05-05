@@ -1,8 +1,13 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class User
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        # NOTE: UserRecord overrides SadequateRecord's default +each+
+        basic_import :UserRecord
       end
 
       def initialize(record)
@@ -25,7 +30,8 @@ module Supermarket
           first_name: @record.first_name,
           last_name: @record.last_name,
           created_at: created_at,
-          updated_at: updated_at
+          updated_at: updated_at,
+          legacy_id: @record.id
         ).tap { |u| u.record_timestamps = false }
 
         account.user = user

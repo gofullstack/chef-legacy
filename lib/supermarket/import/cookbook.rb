@@ -1,23 +1,21 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class Cookbook
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with "SELECT cookbooks.id FROM cookbooks"
+
+        migrate :CookbookRecord => :Cookbook
       end
 
       def initialize(record)
         @record = record
       end
 
-      def complete?
-        ::Cookbook.with_name(@record.name).count > 0
-      end
-
-      def call(force = false)
-        if complete?
-          return unless force
-        end
-
+      def call
         category = ::Category.with_name(@record.category.name).first!
         owner = ::Account.
           for('chef_oauth2').
@@ -34,7 +32,8 @@ module Supermarket
           source_url: @record.sanitized_external_url.to_s,
           download_count: @record.download_count,
           created_at: @record.created_at,
-          updated_at: @record.updated_at
+          updated_at: @record.updated_at,
+          legacy_id: @record.id
         ).tap { |c| c.record_timestamps = false }
 
         cookbook_versions = @record.cookbook_versions.map do |record|
@@ -48,7 +47,8 @@ module Supermarket
             download_count: record.download_count,
             cookbook: cookbook,
             created_at: record.created_at,
-            updated_at: record.updated_at
+            updated_at: record.updated_at,
+            legacy_id: record.id
           ).tap { |cv| cv.record_timestamps = false }
         end
 

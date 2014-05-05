@@ -18,14 +18,18 @@ namespace :supermarket do
     #   existing community site
     #
     def import!(title, type, importer)
-      progress_bar = ProgressBar.create(title: title, total: type.count)
+      if importer.count.zero?
+        return
+      end
 
-      type.each do |record|
+      progress_bar = ProgressBar.create(title: title, total: importer.count)
+
+      importer.each do |record|
         progress_bar.increment
 
         ActiveRecord::Base.transaction do
           begin
-            importer.import(record)
+            importer.new(record).call
           rescue => e
             message_header = "#{e.class}: #{e.message}"
             message_body = ([message_header] + e.backtrace).join("\n  ")

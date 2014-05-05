@@ -6,19 +6,6 @@ module Supermarket
       class << self
         extend SadequateRecord::Table
         table :cookbooks, :CookbookRecord
-
-        def each
-          query = %{
-            SELECT #{sadequate_sanitized_fields.join(',')} FROM cookbooks
-            WHERE deprecated = 1
-          }
-
-          deprecated_cookbooks = Pool.with do |conn|
-            conn.query(query).to_a
-          end.each do |cookbook_data|
-            yield new(cookbook_data)
-          end
-        end
       end
 
       extend SadequateRecord::Record

@@ -1,8 +1,19 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class Collaboration
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with %{
+          SELECT collaborations.id
+          FROM collaborations
+          INNER JOIN users ON users.id = collaborations.user_id
+          INNER JOIN cookbooks ON cookbooks.id = collaborations.cookbook_id
+        }
+
+        migrate :CollaborationRecord => :CookbookCollaborator
       end
 
       def initialize(record)
@@ -10,23 +21,13 @@ module Supermarket
         @old_user = record.user
       end
 
-      def complete?
-        ::CookbookCollaborator.where(
-          user_id: user.id,
-          cookbook_id: cookbook.id
-        ).count > 0
-      end
-
-      def call(force = false)
-        if complete?
-          return unless force
-        end
-
-        CookbookCollaborator.new(
+      def call
+        ::CookbookCollaborator.new(
           user_id: user.id,
           cookbook_id: cookbook.id,
           created_at: @record.created_at,
-          updated_at: @record.updated_at
+          updated_at: @record.updated_at,
+          legacy_id: @record.id
         ).tap do |cookbook_collaborator|
           cookbook_collaborator.record_timestamps = false
           cookbook_collaborator.save!

@@ -1,8 +1,14 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class Category
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with "SELECT categories.id FROM categories"
+
+        migrate :CategoryRecord => :Category
       end
 
       def initialize(record)

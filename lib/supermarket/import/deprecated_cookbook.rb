@@ -1,28 +1,35 @@
+require 'supermarket/import/configuration'
+
 module Supermarket
   module Import
     class DeprecatedCookbook
-      def self.import(record)
-        new(record).call
+      class << self
+        extend Configuration
+
+        list_ids_with %{
+          SELECT cookbooks.id FROM cookbooks
+          INNER JOIN cookbooks AS replacements ON replacements.id = cookbooks.replacement_id
+          WHERE cookbooks.deprecated = 1
+        }
+
+        migrate :DeprecatedCookbookRecord => :Cookbook
+
+        def imported_legacy_ids
+          ::Cookbook.where(deprecated: true, legacy_id: ids).pluck(:legacy_id)
+        end
       end
 
       def initialize(record)
         @record = record
-        @cookbook = ::Cookbook.with_name(@record.name).first!.tap do |c|
-          c.record_timestamps = false
-        end
-      end
-
-      def complete?
-        @cookbook.deprecated? && @cookbook.replacement.present?
+        @cookbook = ::Cookbook.with_name(@record.name).first!
       end
 
       def call
-        return unless complete?
-
         replacement = ::Cookbook.with_name(@record.replacement.name).first!
 
         @cookbook.deprecated = true
         @cookbook.replacement = replacement
+        @cookbook.record_timestamps = false
         @cookbook.save!
       end
     end

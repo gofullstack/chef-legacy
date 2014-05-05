@@ -7,17 +7,13 @@ module Supermarket
         extend SadequateRecord::Table
         table :users, :UserRecord
 
-        #
-        # Overrides SadequateRecord's +each+ method so that the importer only
-        # recieves usernames which are not present in Supermarket. This
-        # marginally speeds up the initial import, and drastically speeds up
-        # subsequent imports
-        #
-        def each
-          existing_usernames = Pool.with do |conn|
+        def existing_usernames
+          Pool.with do |conn|
             conn.query("SELECT unique_name FROM users WHERE deleted_at IS NULL").to_a
           end.map { |h| h['unique_name'] }
+        end
 
+        def imported_usernames
           existing_username_list = existing_usernames.map do |u|
             "'#{u}'"
           end.join(',')
@@ -28,12 +24,25 @@ module Supermarket
             AND username IN (#{existing_username_list})
           }.squish
 
-          imported_usernames = ::Account.
-            connection.
-            query(imported_usernames_query).
-            flatten
+          ::Account.connection.query(imported_usernames_query).flatten
+        end
 
-          new_usernames = existing_usernames - imported_usernames
+        def usernames_to_be_imported
+          existing_usernames - imported_usernames
+        end
+
+        def count
+          usernames_to_be_imported.count
+        end
+
+        #
+        # Overrides SadequateRecord's +each+ method so that the importer only
+        # recieves usernames which are not present in Supermarket. This
+        # marginally speeds up the initial import, and drastically speeds up
+        # subsequent imports
+        #
+        def each
+          new_usernames = usernames_to_be_imported
 
           if new_usernames.any?
             slice_divisor = 10 ** (new_usernames.size.to_s.size - 2)
