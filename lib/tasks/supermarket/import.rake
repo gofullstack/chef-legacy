@@ -18,11 +18,11 @@ namespace :supermarket do
     #   existing community site
     #
     def import!(title, type, importer)
-      if importer.count.zero?
-        return
-      end
-
-      progress_bar = ProgressBar.create(title: title, total: importer.count)
+      progress_bar = ProgressBar.create(
+        title: "Importing: #{title}",
+        total: importer.count,
+        format: '%t: (%c/%C) |%B|'
+      )
 
       importer.each do |record|
         progress_bar.increment
@@ -31,6 +31,8 @@ namespace :supermarket do
           begin
             importer.new(record).call
           rescue => e
+            progress_bar.decrement
+
             message_header = "#{e.class}: #{e.message}"
             message_body = ([message_header] + e.backtrace).join("\n  ")
             progress_bar.log message_body
@@ -39,6 +41,8 @@ namespace :supermarket do
           end
         end
       end
+
+      progress_bar.stop
     end
 
     desc 'Import community cookbook categories'
