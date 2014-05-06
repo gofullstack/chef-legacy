@@ -6,8 +6,14 @@ module Supermarket
       class << self
         extend Configuration
 
-        # NOTE: UserRecord overrides SadequateRecord's default +each+
-        basic_import :UserRecord
+        list_ids_with %{
+          SELECT users.id FROM users
+          INNER JOIN email_addresses ON email_addresses.user_id = users.id
+          WHERE users.deleted_at IS NULL
+          AND email_addresses.address != ''
+        }
+
+        migrate :UserRecord => :User
       end
 
       def initialize(record)
@@ -33,6 +39,8 @@ module Supermarket
           updated_at: updated_at,
           legacy_id: @record.id
         ).tap { |u| u.record_timestamps = false }
+
+        user.save!
 
         account.user = user
         account.save!
