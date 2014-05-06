@@ -64,8 +64,13 @@ module Supermarket
             )
           end
 
+          description = [metadata, @cookbook_record].
+            map(&:description).
+            find { |description| description.to_s.strip.present? }
+
           @cookbook_version.update_attributes!(
             dependencies_imported: true,
+            description: description,
             readme: parameters.readme.contents.to_s,
             readme_extension: parameters.readme.extension.to_s
           )
