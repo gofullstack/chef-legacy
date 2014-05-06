@@ -3,26 +3,6 @@ require 'supermarket/community_site/pool'
 module Supermarket
   module Import
     module Configuration
-      def basic_import(record_type_name)
-        define_method(:record_type) do
-          Supermarket::CommunitySite.const_get(record_type_name)
-        end
-
-        define_method(:each) do |&block|
-          record_type.each(&block)
-        end
-
-        define_method(:count) do
-          record_type.count
-        end
-
-        define_method(:ids) do
-          CommunitySite::Pool.with do |conn|
-            conn.query("SELECT id FROM #{record_type.sadequate_table_name}")
-          end.to_a.map { |result| result['id'].to_i }
-        end
-      end
-
       def list_ids_with(query)
         define_method(:ids) do
           CommunitySite::Pool.with do |conn|
