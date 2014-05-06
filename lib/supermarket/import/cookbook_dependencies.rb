@@ -46,8 +46,6 @@ module Supermarket
         cookbook_upload_parameters do |parameters|
           metadata = parameters.metadata
 
-          @cookbook.update_attribute(:maintainer, metadata.maintainer)
-
           metadata.dependencies.each do |name, constraint|
             constraints = Array(constraint).map do |original|
               @constraint_updates.reduce(original) do |updated, (old, new)|
