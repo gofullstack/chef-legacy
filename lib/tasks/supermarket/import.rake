@@ -4,8 +4,13 @@ require 'supermarket/community_site'
 require 'supermarket/import'
 
 namespace :supermarket do
-  desc 'Migrate data from the old community site to Supermarket'
-  multitask :migrate => ['supermarket:import:all', 'supermarket:cull:all']
+  imports = [:users, :categories, :cookbooks, :deprecated_cookbooks,
+             :cookbook_following, :supported_platforms, :cookbook_dependencies,
+             :cookbook_collaboration].map {  |i| "import:#{i}" }
+  cullings = [:users, :cookbooks, :cookbook_following, :cookbook_collaboration].
+    map { |c| "cull:#{c}" }
+
+  multitask :migrate => imports + cullings
 
   namespace :import do
     #
