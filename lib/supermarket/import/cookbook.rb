@@ -25,8 +25,6 @@ module Supermarket
 
         cookbook = ::Cookbook.new(
           name: @record.name,
-          maintainer: 'john@example.com',
-          description: @record.description,
           category: category,
           owner: owner,
           source_url: @record.sanitized_external_url.to_s,
@@ -38,6 +36,7 @@ module Supermarket
 
         cookbook_versions = @record.cookbook_versions.map do |record|
           ::CookbookVersion.new(
+            description: @record.description,
             version: record.version,
             license: record.license,
             tarball_file_name: record.tarball_file_name,
