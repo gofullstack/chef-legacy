@@ -1,6 +1,5 @@
 require 'chef/exceptions'
 require 'ruby-progressbar'
-require 'supermarket/community_site'
 require 'supermarket/import'
 
 namespace :supermarket do
@@ -20,12 +19,10 @@ namespace :supermarket do
     # but the import does not fail.
     #
     # @param title [String] the progress bar title
-    # @param type [Enumerable] that which enumerates the existing community
-    #   site data
-    # @param importer [.import] that which imports a single record from the
-    #   existing community site
+    # @param importer [Enumerable, #call] that which can iterate over
+    #   unimported records, and whose instances respond to +call+
     #
-    def import!(title, type, importer)
+    def import!(title, importer)
       progress_bar = ProgressBar.create(
         title: "Importing: #{title}",
         total: importer.count,
@@ -59,57 +56,42 @@ namespace :supermarket do
 
     desc 'Import community cookbook categories'
     task :categories => :environment do
-      import! 'Categories',
-        Supermarket::CommunitySite::CategoryRecord,
-        Supermarket::Import::Category
+      import! 'Categories', Supermarket::Import::Category
     end
 
     desc 'Import community site user accounts'
     task :users => :environment do
-      import! 'Users',
-        Supermarket::CommunitySite::UserRecord,
-        Supermarket::Import::User
+      import! 'Users', Supermarket::Import::User
     end
 
     desc 'Import community cookbook records'
     task :cookbooks => [:users, :categories] do
-      import! 'Cookbooks',
-        Supermarket::CommunitySite::CookbookRecord,
-        Supermarket::Import::Cookbook
+      import! 'Cookbooks', Supermarket::Import::Cookbook
     end
 
     desc 'Import cookbook deprecation records'
     task :deprecated_cookbooks => :cookbooks do
-      import! 'Deprecated Cookbooks',
-        Supermarket::CommunitySite::DeprecatedCookbookRecord,
-        Supermarket::Import::DeprecatedCookbook
+      import! 'Deprecated Cookbooks', Supermarket::Import::DeprecatedCookbook
     end
 
     desc 'Import cookbook following records'
     task :cookbook_following => [:cookbooks, :users] do
-      import! 'Cookbook Following',
-        Supermarket::CommunitySite::FollowingRecord,
-        Supermarket::Import::Following
+      import! 'Cookbook Following', Supermarket::Import::Following
     end
 
     desc 'Import cookbook collaboration records'
     task :cookbook_collaboration => [:cookbooks, :users] do
-      import! 'Cookbook Collaboration',
-        Supermarket::CommunitySite::CollaborationRecord,
-        Supermarket::Import::Collaboration
+      import! 'Cookbook Collaboration', Supermarket::Import::Collaboration
     end
 
     desc 'Import cookbook version supported platforms'
     task :supported_platforms => :cookbooks do
-      import! 'Supported Platform Records',
-        Supermarket::CommunitySite::PlatformVersionRecord,
-        Supermarket::Import::PlatformVersion
+      import! 'Supported Platform Records', Supermarket::Import::PlatformVersion
     end
 
     desc 'Import cookbook dependency relationships'
     task :cookbook_dependencies => :cookbooks do
       import! 'Cookbook Dependency Relationships',
-        Supermarket::CommunitySite::CookbookVersionRecord,
         Supermarket::Import::CookbookVersionDependencies
     end
 
