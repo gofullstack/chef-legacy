@@ -1,4 +1,4 @@
-require 'supermarket/community_site'
+require 'supermarket/import'
 require 'ruby-progressbar'
 
 namespace :supermarket do
@@ -18,16 +18,20 @@ namespace :supermarket do
       ids_which_no_longer_exist.each do |legacy_id|
         bar.increment
 
-        begin
-          destination.find_by!(legacy_id: legacy_id).destroy
-        rescue => e
-          bar.decrement
+        ActiveRecord::Base.transaction do
+          begin
+            destination.find_by!(legacy_id: legacy_id).destroy
+          rescue => e
+            bar.decrement
 
-          Raven.capture_exception(e)
+            Raven.capture_exception(e)
 
-          message_header = "#{e.class}: #{e.message}"
-          message_body = ([message_header] + e.backtrace).join("\n  ")
-          bar.log message_body
+            message_header = "#{e.class}: #{e.message}"
+            message_body = ([message_header] + e.backtrace).join("\n  ")
+            bar.log message_body
+
+            raise ActiveRecord::Rollback
+          end
         end
       end
 
