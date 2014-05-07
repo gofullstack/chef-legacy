@@ -11,7 +11,10 @@ module Supermarket
           FROM followings
           INNER JOIN cookbooks ON cookbooks.id = followings.followable_id
           INNER JOIN users ON users.id = followings.user_id
-          WHERE followable_type='Cookbook'
+          INNER JOIN email_addresses ON email_addresses.user_id = users.id
+          WHERE users.deleted_at IS NULL
+          AND email_addresses.address != ''
+          AND followable_type='Cookbook'
         }
 
         migrate :FollowingRecord => :CookbookFollower

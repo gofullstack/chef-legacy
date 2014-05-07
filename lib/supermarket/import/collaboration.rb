@@ -11,6 +11,9 @@ module Supermarket
           FROM collaborations
           INNER JOIN users ON users.id = collaborations.user_id
           INNER JOIN cookbooks ON cookbooks.id = collaborations.cookbook_id
+          INNER JOIN email_addresses ON email_addresses.user_id = users.id
+          WHERE users.deleted_at IS NULL
+          AND email_addresses.address != ''
         }
 
         migrate :CollaborationRecord => :CookbookCollaborator
