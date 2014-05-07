@@ -24,13 +24,6 @@ module Supermarket
         created_at = @record.created_at
         updated_at = @record.updated_at || @record.created_at
 
-        account = ::Account.new(
-          provider: 'chef_oauth2',
-          uid: @record.unique_name,
-          username: @record.unique_name,
-          oauth_token: 'imported'
-        ).tap { |a| a.record_timestamps = false }
-
         user = ::User.new(
           email: @record.primary_email_address,
           first_name: @record.first_name,
@@ -38,12 +31,21 @@ module Supermarket
           created_at: created_at,
           updated_at: updated_at,
           legacy_id: @record.id
-        ).tap { |u| u.record_timestamps = false }
+        ).tap do |user|
+          user.record_timestamps = false
+          user.save!
+        end
 
-        user.save!
-
-        account.user = user
-        account.save!
+        ::Account.new(
+          provider: 'chef_oauth2',
+          uid: @record.unique_name,
+          username: @record.unique_name,
+          oauth_token: 'imported'
+        ).tap do |account|
+          account.record_timestamps = false
+          account.user = user
+          account.save!
+        end
       end
     end
   end

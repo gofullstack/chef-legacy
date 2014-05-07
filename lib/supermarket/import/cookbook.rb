@@ -16,24 +16,6 @@ module Supermarket
       end
 
       def call
-        category = ::Category.with_name(@record.category.name).first!
-        owner = ::Account.
-          for('chef_oauth2').
-          with_username(@record.maintainer.unique_name).
-          first!.
-          user
-
-        cookbook = ::Cookbook.new(
-          name: @record.name,
-          category: category,
-          owner: owner,
-          source_url: @record.sanitized_external_url.to_s,
-          download_count: @record.download_count,
-          created_at: @record.created_at,
-          updated_at: @record.updated_at,
-          legacy_id: @record.id
-        ).tap { |c| c.record_timestamps = false }
-
         cookbook_versions = @record.cookbook_versions.map do |record|
           ::CookbookVersion.new(
             description: @record.description,
@@ -44,15 +26,36 @@ module Supermarket
             tarball_file_size: record.tarball_file_size,
             tarball_updated_at: record.tarball_updated_at,
             download_count: record.download_count,
-            cookbook: cookbook,
             created_at: record.created_at,
             updated_at: record.updated_at,
             legacy_id: record.id
-          ).tap { |cv| cv.record_timestamps = false }
+          ).tap do |cookbook_version|
+            cookbook_version.record_timestamps = false
+            cookbook_version.save!
+          end
         end
 
-        cookbook.cookbook_versions = cookbook_versions
-        cookbook.save!
+        category = ::Category.with_name(@record.category.name).first!
+        owner = ::Account.
+          for('chef_oauth2').
+          with_username(@record.maintainer.unique_name).
+          first!.
+          user
+
+        ::Cookbook.new(
+          name: @record.name,
+          category: category,
+          owner: owner,
+          source_url: @record.sanitized_external_url.to_s,
+          download_count: @record.download_count,
+          created_at: @record.created_at,
+          updated_at: @record.updated_at,
+          legacy_id: @record.id,
+          cookbook_versions: cookbook_versions
+        ).tap do |cookbook|
+          cookbook.record_timestamps = false
+          cookbook.save!
+        end
       end
     end
   end
