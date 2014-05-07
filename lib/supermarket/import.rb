@@ -5,3 +5,5 @@ File.dirname(__FILE__).tap do |supermarket|
     require "supermarket/import/#{name}"
   end
 end
+
+require 'supermarket/community_site'
