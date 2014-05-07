@@ -41,6 +41,8 @@ namespace :supermarket do
           rescue => e
             progress_bar.decrement
 
+            Raven.capture_exception(e)
+
             message_header = "#{e.class}: #{e.message}"
             message_body = ([message_header] + e.backtrace).join("\n  ")
             progress_bar.log message_body
@@ -51,6 +53,8 @@ namespace :supermarket do
       end
 
       progress_bar.stop
+    rescue => e
+      Raven.capture_exception(e)
     end
 
     desc 'Import community cookbook categories'

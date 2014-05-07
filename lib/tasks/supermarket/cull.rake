@@ -23,6 +23,8 @@ namespace :supermarket do
         rescue => e
           bar.decrement
 
+          Raven.capture_exception(e)
+
           message_header = "#{e.class}: #{e.message}"
           message_body = ([message_header] + e.backtrace).join("\n  ")
           bar.log message_body
@@ -30,6 +32,8 @@ namespace :supermarket do
       end
 
       bar.stop
+    rescue => e
+      Raven.capture_exception(e)
     end
 
     desc 'Remove any outdated cookbook followers'
