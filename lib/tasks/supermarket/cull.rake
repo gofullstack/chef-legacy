@@ -40,6 +40,8 @@ namespace :supermarket do
       bar.stop
     rescue => e
       Raven.capture_exception(e)
+
+      raise e
     end
 
     desc 'Remove any outdated cookbook followers'

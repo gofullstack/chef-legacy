@@ -54,6 +54,8 @@ namespace :supermarket do
       progress_bar.stop
     rescue => e
       Raven.capture_exception(e)
+
+      raise e
     end
 
     desc 'Import community cookbook categories'
