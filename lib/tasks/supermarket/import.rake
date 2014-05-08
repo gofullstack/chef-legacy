@@ -73,6 +73,11 @@ namespace :supermarket do
       import! 'Cookbooks', Supermarket::Import::Cookbook
     end
 
+    desc 'Import community cookbook version records'
+    task :cookbook_versions => :cookbooks do
+      import! 'Cookbook Versions', Supermarket::Import::CookbookVersion
+    end
+
     desc 'Import cookbook deprecation records'
     task :deprecated_cookbooks => :cookbooks do
       import! 'Deprecated Cookbooks', Supermarket::Import::DeprecatedCookbook
@@ -94,13 +99,14 @@ namespace :supermarket do
     end
 
     desc 'Import cookbook dependency relationships'
-    task :cookbook_dependencies => :cookbooks do
+    task :cookbook_dependencies => :cookbook_versions do
       import! 'Cookbook Dependency Relationships',
         Supermarket::Import::CookbookVersionDependencies
     end
 
-    multitask :all => [:users, :categories, :cookbooks, :deprecated_cookbooks,
-                       :cookbook_following, :supported_platforms,
-                       :cookbook_dependencies, :cookbook_collaboration]
+    multitask :all => [:users, :categories, :cookbooks, :cookbook_versions,
+                       :deprecated_cookbooks, :cookbook_following,
+                       :supported_platforms, :cookbook_dependencies,
+                       :cookbook_collaboration]
   end
 end

@@ -24,19 +24,11 @@ module Supermarket
         end
 
         define_method(:each) do |&block|
-          query = %{
-            SELECT #{source_type.sadequate_sanitized_field_list}
-            FROM #{source_type.sadequate_table_name}
-            WHERE id = %d
-          }.squish
-
           missing_ids.each do |missing_id|
-            record_data = CommunitySite::Pool.with do |conn|
-              conn.query(query % [missing_id])
-            end.first
+            record = source_type.find(missing_id)
 
-            if record_data
-              block.call(source_type.new(record_data))
+            if record
+              block.call(record)
             end
           end
         end
