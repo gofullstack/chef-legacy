@@ -26,9 +26,11 @@ namespace :supermarket do
 
             Raven.capture_exception(e)
 
-            message_header = "#{e.class}: #{e.message}"
-            message_body = ([message_header] + e.backtrace).join("\n  ")
-            bar.log message_body
+            if ENV['SUPERMARKET_DEBUG']
+              message_header = "#{e.class}: #{e.message}"
+              message_body = ([message_header] + e.backtrace).join("\n  ")
+              bar.log message_body
+            end
 
             raise ActiveRecord::Rollback
           end
