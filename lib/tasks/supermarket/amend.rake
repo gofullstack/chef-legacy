@@ -14,30 +14,26 @@ namespace :supermarket do
 
         ::Cookbook.where.not(legacy_id: nil).find_in_batches do |batch|
           batch.each do |cookbook|
-            ActiveRecord::Base.transaction do
-              begin
-                id = cookbook.legacy_id
-                record = Supermarket::CommunitySite::CookbookRecord.find(id)
+            begin
+              id = cookbook.legacy_id
+              record = Supermarket::CommunitySite::CookbookRecord.find(id)
 
-                if record && record.updated_at.utc > cookbook.updated_at.utc
-                  cookbook.assign_attributes(
-                    category: record.supermarket_category,
-                    owner: record.supermarket_owner,
-                    source_url: record.sanitized_external_url.to_s,
-                    updated_at: record.updated_at
-                  )
-                  cookbook.record_timestamps = false
-                  cookbook.save!
-                end
-
-                bar.increment
-              rescue => e
-                bar.decrement
-
-                Supermarket::Import.report(e) { |m| bar.log(m) }
-
-                raise ActiveRecord::Rollback
+              if record && record.updated_at.utc > cookbook.updated_at.utc
+                cookbook.assign_attributes(
+                  category: record.supermarket_category,
+                  owner: record.supermarket_owner,
+                  source_url: record.sanitized_external_url.to_s,
+                  updated_at: record.updated_at
+                )
+                cookbook.record_timestamps = false
+                cookbook.save!
               end
+
+              bar.increment
+            rescue => e
+              bar.decrement
+
+              Supermarket::Import.report(e) { |m| bar.log(m) }
             end
           end
         end
