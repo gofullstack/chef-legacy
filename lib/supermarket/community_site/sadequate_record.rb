@@ -235,6 +235,21 @@ module Supermarket
             end
           end
 
+          define_method(:find) do |id|
+            query = "SELECT %s FROM #{name} WHERE id = %d" % [
+              real_record_type.sadequate_sanitized_fields.join(', '),
+              id
+            ]
+
+            data = Pool.with do |connection|
+              connection.query(query)
+            end.to_a.first
+
+            if data
+              real_record_type.new(data)
+            end
+          end
+
           include Enumerable
         end
       end

@@ -26,7 +26,7 @@ Set `N` to the maximum number of tasks to run in parallel. Factors to consider w
 
 ## Implementation Overview
 
-The `migrate` task is split into two parts: `import` and `cull`. The former determines which records from the Opscode Community Site have yet to be imported and imports them. The latter determines which imported records no longer exist in the Opscode Community Site and deletes them.
+The `migrate` task is split into three parts: `import`, `cull`, and `amend`. `import` determines which records from the Opscode Community Site have yet to be imported and imports them. `cull` determines which imported records no longer exist in the Opscode Community Site and deletes them. `amend` combs through imported cookbooks and makes sure that any updates on the existing community site make their way to Supermarket.
 
 Take the User migration for example, which is configured as follows:
 
@@ -67,3 +67,5 @@ end
 The entire import process is nothing more than iterating over a class in the `Import` namespace, instantiating an instance of that class, and sending it `call`. It's worth noting that each import happens inside of an ActiveRecord transaction on the off chance there's bad data in the Community Site database, and we fail to massage it correctly.
 
 Culling works in a similar way, but in reverse.
+
+Amending is an operation that only makes sense for User data and for Cookbook data. Given that the definitive source for User data is, or will be, oc-id, `chef-legacy` only amends Cookbook data. We only amend a cookbook if the Community Site `updated_at` timestamp is more recent than Supermarket `updated_at` timestamp. There's a possibility that we'll miss updates due to clock discrepancies, but cookbook data does not change very often so this will hopefully not be a problem.
