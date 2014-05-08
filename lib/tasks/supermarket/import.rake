@@ -32,19 +32,23 @@ namespace :supermarket do
       importer.each do |record|
         progress_bar.increment
 
-        ActiveRecord::Base.transaction do
+        imports = []
+
+        begin
+          imports = importer.new(record).to_a
+        rescue => e
+          Supermarket::Import.report(e) { |m| progress_bar.log(m) }
+          progress_bar.decrement
+        end
+
+        if imports.any?
           begin
-            importer.new(record).call
-          rescue => e
-            progress_bar.decrement
-
-            Raven.capture_exception(e)
-
-            if ENV['SUPERMARKET_DEBUG']
-              message_header = "#{e.class}: #{e.message}"
-              message_body = ([message_header] + e.backtrace).join("\n  ")
-              progress_bar.log message_body
+            ActiveRecord::Base.transaction do
+              imports.each(&:save!)
             end
+          rescue => e
+            Supermarket::Import.report(e) { |m| progress_bar.log(m) }
+            progress_bar.decrement
 
             raise ActiveRecord::Rollback
           end
@@ -53,7 +57,7 @@ namespace :supermarket do
 
       progress_bar.stop
     rescue => e
-      Raven.capture_exception(e)
+      Supermarket::Import.report(e) { |m| progress_bar.log(m) }
 
       raise e
     end

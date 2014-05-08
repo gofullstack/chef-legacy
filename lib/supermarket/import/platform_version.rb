@@ -16,6 +16,8 @@ module Supermarket
         migrate :PlatformVersionRecord => :SupportedPlatform
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -34,7 +36,7 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
 
         @cookbook_version.supported_platforms.build(
@@ -45,7 +47,8 @@ module Supermarket
           legacy_id: @record.id
         ).tap do |platform|
           platform.record_timestamps = false
-          platform.save!
+
+          yield platform
         end
       end
     end

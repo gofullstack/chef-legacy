@@ -51,7 +51,7 @@ module Supermarket
 end
 ```
 
-We first specify a SQL query which will list the IDs of Opscode Community Site User records which ought to exist in Supermarket. We then specify that the migration path is from `UserRecord` (an object wrapping an Opscode Community Site user record) to `User` (a Supermarket model which is set up to store the Opscode Community Site user record's ID in a field named `legacy_id`). Each class in the `Import` namespace is `Enumerable` over unimported records at the start of its migration path. More concretely, can import the first unimported Community Site user as follows:
+We first specify a SQL query which will list the IDs of Opscode Community Site User records which ought to exist in Supermarket. We then specify that the migration path is from `UserRecord` (an object wrapping an Opscode Community Site user record) to `User` (a Supermarket model which is set up to store the Opscode Community Site user record's ID in a field named `legacy_id`). Each class in the `Import` namespace is `Enumerable` over unimported records at the start of its migration path. Each instance of a class in the `Import` namespace is `Enumerable` over the unsaved records in Supermarket which would satisfy an import. For example, importing the first unimported `User` looks like this:
 
 ```ruby
 require 'supermarket/import'
@@ -60,11 +60,11 @@ user_record = Supermarket::Import::User.first
 
 if user_record
   import = Supermarket::Import::User.new(user_record)
-  import.call
+  import.each(&:save!)
 end
 ```
 
-The entire import process is nothing more than iterating over a class in the `Import` namespace, instantiating an instance of that class, and sending it `call`. It's worth noting that each import happens inside of an ActiveRecord transaction on the off chance there's bad data in the Community Site database, and we fail to massage it correctly.
+The entire import process is nothing more than iterating over a class in the `Import` namespace, instantiating an instance of that class, and calling `save!` on each object it yields. It's worth noting that the `supermarket:migrate` task runs each import inside of an ActiveRecord transaction on the off chance there's bad data in the Community Site database, and we fail to massage it correctly.
 
 Culling works in a similar way, but in reverse.
 

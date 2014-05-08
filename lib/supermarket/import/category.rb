@@ -11,19 +11,21 @@ module Supermarket
         migrate :CategoryRecord => :Category
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
 
-        if Category.with_name(@record.name).count == 0
+        if ::Category.with_name(@record.name).count == 0
           @skip = false
         end
       end
 
-      def call
+      def each
         return if @skip
 
-        ::Category.create!(name: @record.name)
+        yield ::Category.new(name: @record.name)
       end
     end
   end

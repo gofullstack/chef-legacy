@@ -7,3 +7,18 @@ File.dirname(__FILE__).tap do |supermarket|
 end
 
 require 'supermarket/community_site'
+
+module Supermarket
+  module Import
+    def self.report(e)
+      Raven.capture_exception(e)
+
+      if ENV['SUPERMARKET_DEBUG']
+        message_header = "#{e.class}: #{e.message}"
+        message_body = ([message_header] + e.backtrace).join("\n  ")
+
+        yield message_body
+      end
+    end
+  end
+end

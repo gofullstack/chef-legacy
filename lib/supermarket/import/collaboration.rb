@@ -19,6 +19,8 @@ module Supermarket
         migrate :CollaborationRecord => :CookbookCollaborator
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -36,7 +38,7 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
 
         ::CookbookCollaborator.new(
@@ -47,7 +49,8 @@ module Supermarket
           legacy_id: @record.id
         ).tap do |cookbook_collaborator|
           cookbook_collaborator.record_timestamps = false
-          cookbook_collaborator.save!
+
+          yield cookbook_collaborator
         end
       end
     end

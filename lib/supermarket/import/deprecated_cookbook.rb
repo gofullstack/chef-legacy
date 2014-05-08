@@ -19,6 +19,8 @@ module Supermarket
         end
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -30,13 +32,14 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
 
         @cookbook.deprecated = true
         @cookbook.replacement = @replacement
         @cookbook.record_timestamps = false
-        @cookbook.save!
+
+        yield @cookbook
       end
     end
   end

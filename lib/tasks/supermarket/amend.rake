@@ -34,13 +34,7 @@ namespace :supermarket do
               rescue => e
                 bar.decrement
 
-                Raven.capture_exception(e)
-
-                if ENV['SUPERMARKET_DEBUG']
-                  message_header = "#{e.class}: #{e.message}"
-                  message_body = ([message_header] + e.backtrace).join("\n  ")
-                  bar.log message_body
-                end
+                Supermarket::Import.report(e) { |m| bar.log(m) }
 
                 raise ActiveRecord::Rollback
               end
@@ -48,7 +42,7 @@ namespace :supermarket do
           end
         end
       rescue => e
-        Raven.capture_exception(e)
+        Supermarket::Import.report(e) { |m| bar.log(m) }
 
         raise e
       end

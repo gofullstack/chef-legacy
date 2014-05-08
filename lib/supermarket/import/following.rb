@@ -20,6 +20,8 @@ module Supermarket
         migrate :FollowingRecord => :CookbookFollower
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -37,7 +39,7 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
 
         ::CookbookFollower.new(
@@ -48,7 +50,8 @@ module Supermarket
           legacy_id: @record.id
         ).tap do |follower|
           follower.record_timestamps = false
-          follower.save!
+
+          yield follower
         end
       end
 

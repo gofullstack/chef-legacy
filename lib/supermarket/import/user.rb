@@ -16,11 +16,13 @@ module Supermarket
         migrate :UserRecord => :User
       end
 
+      include Enumerable
+
       def initialize(record)
         @record = record
       end
 
-      def call
+      def each
         created_at = @record.created_at
         updated_at = @record.updated_at || @record.created_at
 
@@ -33,7 +35,8 @@ module Supermarket
           legacy_id: @record.id
         ).tap do |user|
           user.record_timestamps = false
-          user.save!
+
+          yield user
         end
 
         ::Account.new(
@@ -44,7 +47,8 @@ module Supermarket
         ).tap do |account|
           account.record_timestamps = false
           account.user = user
-          account.save!
+
+          yield account
         end
       end
     end

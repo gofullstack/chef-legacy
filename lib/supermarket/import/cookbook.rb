@@ -11,6 +11,8 @@ module Supermarket
         migrate :CookbookRecord => :Cookbook
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -22,7 +24,7 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
 
         cookbook_versions = @record.cookbook_versions.
@@ -50,7 +52,8 @@ module Supermarket
               legacy_id: record.id
             ).tap do |cookbook_version|
               cookbook_version.record_timestamps = false
-              cookbook_version.save!
+
+              yield cookbook_version
             end
         end
 
@@ -66,7 +69,8 @@ module Supermarket
           cookbook_versions: cookbook_versions
         ).tap do |cookbook|
           cookbook.record_timestamps = false
-          cookbook.save!
+
+          yield cookbook
         end
       end
     end

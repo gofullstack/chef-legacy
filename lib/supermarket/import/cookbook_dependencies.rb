@@ -25,6 +25,8 @@ module Supermarket
         end
       end
 
+      include Enumerable
+
       def initialize(record)
         @skip = true
         @record = record
@@ -48,7 +50,7 @@ module Supermarket
         end
       end
 
-      def call
+      def each
         return if @skip
         return if @cookbook_version.dependencies_imported?
 
@@ -64,7 +66,7 @@ module Supermarket
 
             safe_constraint = Chef::VersionConstraint.new(constraints)
 
-            @cookbook_version.cookbook_dependencies.create!(
+            yield @cookbook_version.cookbook_dependencies.build(
               name: name,
               version_constraint: safe_constraint.to_s,
               cookbook: ::Cookbook.with_name(name).first
@@ -75,12 +77,16 @@ module Supermarket
             map(&:description).
             find { |description| description.to_s.strip.present? }
 
-          @cookbook_version.update_attributes!(
-            dependencies_imported: true,
-            description: description,
-            readme: parameters.readme.contents.to_s,
-            readme_extension: parameters.readme.extension.to_s
-          )
+          @cookbook_version.tap do |version|
+            version.assign_attributes(
+              dependencies_imported: true,
+              description: description,
+              readme: parameters.readme.contents.to_s,
+              readme_extension: parameters.readme.extension.to_s
+            )
+
+            yield version
+          end
         end
       end
 
