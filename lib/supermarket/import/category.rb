@@ -12,17 +12,16 @@ module Supermarket
       end
 
       def initialize(record)
+        @skip = true
         @record = record
-      end
 
-      def complete?
-        ::Category.with_name(@record.name).count > 0
-      end
-
-      def call(force = false)
-        if complete?
-          return unless force
+        if Category.with_name(@record.name).count == 0
+          @skip = false
         end
+      end
+
+      def call
+        return if @skip
 
         ::Category.create!(name: @record.name)
       end

@@ -20,15 +20,21 @@ module Supermarket
       end
 
       def initialize(record)
+        @skip = true
         @record = record
-        @cookbook = ::Cookbook.with_name(@record.name).first!
+        @cookbook = ::Cookbook.with_name(@record.name).first
+        @replacement = ::Cookbook.with_name(@record.replacement.name).first
+
+        if @cookbook && @replacement
+          @skip = false
+        end
       end
 
       def call
-        replacement = ::Cookbook.with_name(@record.replacement.name).first!
+        return if @skip
 
         @cookbook.deprecated = true
-        @cookbook.replacement = replacement
+        @cookbook.replacement = @replacement
         @cookbook.record_timestamps = false
         @cookbook.save!
       end

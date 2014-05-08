@@ -20,7 +20,7 @@ namespace :supermarket do
 
         ActiveRecord::Base.transaction do
           begin
-            destination.find_by!(legacy_id: legacy_id).destroy
+            destination.find_by(legacy_id: legacy_id).try(:destroy)
           rescue => e
             bar.decrement
 

@@ -26,21 +26,30 @@ module Supermarket
       end
 
       def initialize(record)
+        @skip = true
         @record = record
         @cookbook_record = record.cookbook
-        @cookbook = ::Cookbook.with_name(@cookbook_record.name).first!.tap do |c|
-          c.record_timestamps = false
+        @cookbook = ::Cookbook.with_name(@cookbook_record.name).first
+
+        if @cookbook
+          @cookbook.record_timestamps = false
+          @cookbook_version = @cookbook.cookbook_versions.find_by(
+            version: record.version
+          )
+
+          if @cookbook_version
+            @skip = false
+            @cookbook_version.record_timestamps = false
+            @constraint_updates = {
+              '>>' => '>',
+              '<<' => '<'
+            }
+          end
         end
-        @cookbook_version = @cookbook.cookbook_versions.find_by!(
-          version: record.version
-        ).tap { |cv| cv.record_timestamps = false }
-        @constraint_updates = {
-          '>>' => '>',
-          '<<' => '<'
-        }
       end
 
       def call
+        return if @skip
         return if @cookbook_version.dependencies_imported?
 
         cookbook_upload_parameters do |parameters|

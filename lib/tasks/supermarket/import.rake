@@ -94,7 +94,7 @@ namespace :supermarket do
     end
 
     desc 'Import cookbook version supported platforms'
-    task :supported_platforms => :cookbooks do
+    task :supported_platforms => :cookbook_versions do
       import! 'Supported Platform Records', Supermarket::Import::PlatformVersion
     end
 

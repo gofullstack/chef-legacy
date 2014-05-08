@@ -20,14 +20,28 @@ module Supermarket
       end
 
       def initialize(record)
+        @skip = true
         @record = record
-        @old_user = record.user
+        @cookbook = ::Cookbook.with_name(@record.cookbook.name).first
+
+        if @cookbook
+          account = ::Account.
+            where(provider: 'chef_oauth2', username: record.user.unique_name).
+            first
+
+          if account && account.user
+            @skip = false
+            @user = account.user
+          end
+        end
       end
 
       def call
+        return if @skip
+
         ::CookbookCollaborator.new(
-          user_id: user.id,
-          cookbook_id: cookbook.id,
+          user_id: @user.id,
+          cookbook_id: @cookbook.id,
           created_at: @record.created_at,
           updated_at: @record.updated_at,
           legacy_id: @record.id
@@ -35,29 +49,6 @@ module Supermarket
           cookbook_collaborator.record_timestamps = false
           cookbook_collaborator.save!
         end
-      end
-
-      private
-
-      def cookbook
-        @cookbook ||= fetch_cookbook
-      end
-
-      def user
-        @user ||= fetch_user
-      end
-
-      def fetch_cookbook
-        old_cookbook = @record.cookbook
-
-        ::Cookbook.with_name(old_cookbook.name).first!
-      end
-
-      def fetch_user
-        ::Account.where(
-          provider: 'chef_oauth2',
-          username: @old_user.unique_name
-        ).first!.user
       end
     end
   end

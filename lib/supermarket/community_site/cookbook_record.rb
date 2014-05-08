@@ -34,11 +34,11 @@ module Supermarket
       def supermarket_owner
         username = maintainer.unique_name
 
-        ::Account.for('chef_oauth2').with_username(username).first!.user
+        ::Account.for('chef_oauth2').with_username(username).first.try(:user)
       end
 
       def supermarket_category
-        ::Category.with_name(category.name).first!
+        ::Category.with_name(category.name).first
       end
 
       private

@@ -10,26 +10,34 @@ module Supermarket
           SELECT platform_versions.id
           FROM platform_versions
           INNER JOIN cookbook_versions ON cookbook_versions.id = platform_versions.cookbook_version_id
-          INNER JOIN cookbooks ON cookbooks.id = cookbook_versions.id
+          INNER JOIN cookbooks ON cookbooks.id = cookbook_versions.cookbook_id
         }
 
         migrate :PlatformVersionRecord => :SupportedPlatform
       end
 
-      attr_reader :cookbook, :cookbook_version
-
       def initialize(record)
+        @skip = true
         @record = record
         cookbook_name = @record.cookbook_version.cookbook.name
-        cookbook_version_number = @record.cookbook_version.version
-        @cookbook = ::Cookbook.with_name(cookbook_name).first!
-        @cookbook_version = cookbook.cookbook_versions.find_by!(
-          version: cookbook_version_number
-        )
+        cookbook_version_id = @record.cookbook_version.id
+        @cookbook = ::Cookbook.with_name(cookbook_name).first
+
+        if @cookbook
+          @cookbook_version = @cookbook.cookbook_versions.find_by(
+            legacy_id: cookbook_version_id
+          )
+
+          if @cookbook_version
+            @skip = false
+          end
+        end
       end
 
       def call
-        cookbook_version.supported_platforms.build(
+        return if @skip
+
+        @cookbook_version.supported_platforms.build(
           name: @record.platform,
           version_constraint: @record.version_constraint,
           created_at: @record.created_at,

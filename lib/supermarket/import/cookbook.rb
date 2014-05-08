@@ -12,10 +12,19 @@ module Supermarket
       end
 
       def initialize(record)
+        @skip = true
         @record = record
+        @owner = record.supermarket_owner
+        @category = record.supermarket_category
+
+        if @owner && @category
+          @skip = false
+        end
       end
 
       def call
+        return if @skip
+
         cookbook_versions = @record.cookbook_versions.
           group_by(&:version).
           map do |_, records|
@@ -47,8 +56,8 @@ module Supermarket
 
         ::Cookbook.new(
           name: @record.name,
-          category: @record.supermarket_category,
-          owner: @record.supermarket_owner,
+          category: @category,
+          owner: @owner,
           source_url: @record.sanitized_external_url.to_s,
           download_count: @record.download_count,
           created_at: @record.created_at,
