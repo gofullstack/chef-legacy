@@ -42,15 +42,15 @@ namespace :supermarket do
         end
 
         if imports.any?
-          begin
-            ActiveRecord::Base.transaction do
+          ActiveRecord::Base.transaction do
+            begin
               imports.each(&:save!)
-            end
-          rescue => e
-            Supermarket::Import.report(e) { |m| progress_bar.log(m) }
-            progress_bar.decrement
+            rescue => e
+              Supermarket::Import.report(e) { |m| progress_bar.log(m) }
+              progress_bar.decrement
 
-            raise ActiveRecord::Rollback
+              raise ActiveRecord::Rollback
+            end
           end
         end
       end
