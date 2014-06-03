@@ -46,7 +46,7 @@ module Supermarket
               tarball_content_type: record.tarball_content_type,
               tarball_file_size: record.tarball_file_size,
               tarball_updated_at: record.tarball_updated_at,
-              download_count: record.download_count,
+              web_download_count: record.download_count,
               created_at: record.created_at,
               updated_at: record.updated_at,
               legacy_id: record.id
@@ -62,7 +62,7 @@ module Supermarket
           category: @category,
           owner: @owner,
           source_url: @record.sanitized_external_url.to_s,
-          download_count: @record.download_count,
+          web_download_count: @record.download_count,
           created_at: @record.created_at,
           updated_at: @record.updated_at,
           legacy_id: @record.id,
