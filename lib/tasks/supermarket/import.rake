@@ -58,10 +58,6 @@ namespace :supermarket do
       end
 
       Supermarket::Import.debug { progress_bar.stop }
-    rescue => e
-      Supermarket::Import.report(e) { |m| progress_bar.log(m) }
-
-      raise e
     end
 
     desc 'Import community cookbook categories'

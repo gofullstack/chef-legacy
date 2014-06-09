@@ -34,10 +34,6 @@ namespace :supermarket do
       end
 
       Supermarket::Import.debug { bar.stop }
-    rescue => e
-      Supermarket::Import.report(e) { |m| bar.log(m) }
-
-      raise e
     end
 
     desc 'Remove any outdated cookbook followers'
