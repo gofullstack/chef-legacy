@@ -15,9 +15,9 @@ module Supermarket
     end
 
     def self.report(e)
-      debug do
-        Raven.capture_exception(e)
+      Raven.capture_exception(e)
 
+      debug do
         message_header = "#{e.class}: #{e.message}"
         message_body = ([message_header] + e.backtrace).join("\n  ")
 
