@@ -74,7 +74,7 @@ namespace :supermarket do
       )
     end
 
-    multitask :all => [:users, :cookbooks, :cookbook_following,
-                       :cookbook_collaboration]
+    task :all => [:users, :cookbooks, :cookbook_following,
+                  :cookbook_collaboration]
   end
 end
