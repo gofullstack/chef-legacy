@@ -10,10 +10,14 @@ require 'supermarket/community_site'
 
 module Supermarket
   module Import
+    def self.debug
+      yield if ENV['SUPERMARKET_DEBUG']
+    end
+
     def self.report(e)
       Raven.capture_exception(e)
 
-      if ENV['SUPERMARKET_DEBUG']
+      debug do
         message_header = "#{e.class}: #{e.message}"
         message_body = ([message_header] + e.backtrace).join("\n  ")
 

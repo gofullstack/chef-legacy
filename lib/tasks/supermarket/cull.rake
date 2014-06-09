@@ -9,20 +9,22 @@ namespace :supermarket do
       ids_which_still_exist = imported_ids & source.ids
       ids_which_no_longer_exist = imported_ids - ids_which_still_exist
 
-      bar = ProgressBar.create(
-        title: "Culling: #{title}",
-        total: ids_which_no_longer_exist.count,
-        format: '%t: (%c/%C) |%B|'
-      )
+      bar = Supermarket::Import.debug do
+        ProgressBar.create(
+          title: "Culling: #{title}",
+          total: ids_which_no_longer_exist.count,
+          format: '%t: (%c/%C) |%B|'
+        )
+      end
 
       ids_which_no_longer_exist.each do |legacy_id|
-        bar.increment
+        Supermarket::Import.debug { bar.increment }
 
         ActiveRecord::Base.transaction do
           begin
             destination.find_by(legacy_id: legacy_id).try(:destroy)
           rescue => e
-            bar.decrement
+            Supermarket::Import.debug { bar.decrement }
 
             Supermarket::Import.report(e) { |m| bar.log(m) }
 
@@ -31,11 +33,7 @@ namespace :supermarket do
         end
       end
 
-      bar.stop
-    rescue => e
-      Supermarket::Import.report(e) { |m| bar.log(m) }
-
-      raise e
+      Supermarket::Import.debug { bar.stop }
     end
 
     desc 'Remove any outdated cookbook followers'
@@ -74,7 +72,7 @@ namespace :supermarket do
       )
     end
 
-    multitask :all => [:users, :cookbooks, :cookbook_following,
-                       :cookbook_collaboration]
+    task :all => [:users, :cookbooks, :cookbook_following,
+                  :cookbook_collaboration]
   end
 end
