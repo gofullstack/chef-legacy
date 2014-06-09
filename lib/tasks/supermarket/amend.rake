@@ -6,11 +6,13 @@ namespace :supermarket do
     desc 'Update imported cookbook data'
     task :cookbooks => ['supermarket:cull:all', :environment] do
       begin
-        bar = ProgressBar.create(
-          title: "Amending Cookbook Data",
-          total: ::Cookbook.count,
-          format: '%t: (%c/%C) |%B|'
-        )
+        bar = Supermarket::Import.debug do
+          ProgressBar.create(
+            title: "Amending Cookbook Data",
+            total: ::Cookbook.count,
+            format: '%t: (%c/%C) |%B|'
+          )
+        end
 
         ::Cookbook.where.not(legacy_id: nil).find_in_batches do |batch|
           batch.each do |cookbook|
@@ -29,9 +31,9 @@ namespace :supermarket do
                 cookbook.save!
               end
 
-              bar.increment
+              Supermarket::Import.debug { bar.increment }
             rescue => e
-              bar.decrement
+              Supermarket::Import.debug { bar.decrement }
 
               Supermarket::Import.report(e) { |m| bar.log(m) }
             end

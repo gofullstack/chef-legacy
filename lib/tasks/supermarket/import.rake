@@ -23,14 +23,16 @@ namespace :supermarket do
     #   unimported records, and whose instances respond to +call+
     #
     def import!(title, importer)
-      progress_bar = ProgressBar.create(
-        title: "Importing: #{title}",
-        total: importer.count,
-        format: '%t: (%c/%C) |%B|'
-      )
+      progress_bar = Supermarket::Import.debug do
+        ProgressBar.create(
+          title: "Importing: #{title}",
+          total: importer.count,
+          format: '%t: (%c/%C) |%B|'
+        )
+      end
 
       importer.each do |record|
-        progress_bar.increment
+        Supermarket::Import.debug { progress_bar.increment }
 
         imports = []
 
@@ -38,7 +40,7 @@ namespace :supermarket do
           imports = importer.new(record).to_a
         rescue => e
           Supermarket::Import.report(e) { |m| progress_bar.log(m) }
-          progress_bar.decrement
+          Supermarket::Import.debug { progress_bar.decrement }
         end
 
         if imports.any?
@@ -47,7 +49,7 @@ namespace :supermarket do
               imports.each(&:save!)
             rescue => e
               Supermarket::Import.report(e) { |m| progress_bar.log(m) }
-              progress_bar.decrement
+              Supermarket::Import.debug { progress_bar.decrement }
 
               raise ActiveRecord::Rollback
             end
@@ -55,7 +57,7 @@ namespace :supermarket do
         end
       end
 
-      progress_bar.stop
+      Supermarket::Import.debug { progress_bar.stop }
     rescue => e
       Supermarket::Import.report(e) { |m| progress_bar.log(m) }
 
