@@ -13,7 +13,7 @@ module Supermarket
           INNER JOIN cookbooks ON cookbooks.id = cookbook_versions.cookbook_id
         }
 
-        migrate :PlatformVersionRecord => :SupportedPlatform
+        migrate :PlatformVersionRecord => :CookbookVersionPlatform
       end
 
       include Enumerable
@@ -39,9 +39,15 @@ module Supermarket
       def each
         return if @skip
 
-        @cookbook_version.supported_platforms.build(
+        identity = {
           name: @record.platform,
-          version_constraint: @record.version_constraint,
+          version_constraint: @record.version_constraint
+        }
+
+        supported_platform = ::SupportedPlatform.where(identity).first_or_initialize
+
+        @cookbook_version.cookbook_version_platforms.build(
+          supported_platform: supported_platform,
           created_at: @record.created_at,
           updated_at: @record.updated_at,
           legacy_id: @record.id
