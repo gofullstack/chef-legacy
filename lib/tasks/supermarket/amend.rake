@@ -5,15 +5,17 @@ namespace :supermarket do
   namespace :amend do
     desc 'Update imported cookbook data'
     task :cookbooks => ['supermarket:cull:all', :environment] do
+      base_scope = ::Cookbook.where('legacy_id IS NOT ?', nil)
+
       bar = Supermarket::Import.debug do
         ProgressBar.create(
           title: "Amending Cookbook Data",
-          total: ::Cookbook.count,
+          total: base_scope.count,
           format: '%t: (%c/%C) |%B|'
         )
       end
 
-      ::Cookbook.where.not(legacy_id: nil).find_in_batches do |batch|
+      base_scope.find_in_batches do |batch|
         batch.each do |cookbook|
           begin
             id = cookbook.legacy_id
