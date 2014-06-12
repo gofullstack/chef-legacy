@@ -43,7 +43,7 @@ module Supermarket
           created_at: @record.created_at,
           updated_at: @record.updated_at,
           legacy_id: @record.id,
-          cookbook: cookbook
+          cookbook: @cookbook
         ).tap do |cookbook_version|
           cookbook_version.record_timestamps = false
           yield cookbook_version
