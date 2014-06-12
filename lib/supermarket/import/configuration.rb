@@ -1,11 +1,9 @@
-require 'supermarket/community_site/pool'
-
 module Supermarket
   module Import
     module Configuration
       def list_ids_with(query)
         define_method(:ids) do
-          CommunitySite::Pool.with do |conn|
+          CommunitySite.pool.with do |conn|
             conn.query(query)
           end.to_a.map { |result| result['id'].to_i }
         end
