@@ -21,7 +21,8 @@ module Supermarket
           port: component(:port),
           username: component(:user),
           password: component(:password),
-          database: ->(url) { component(:path).call(url)[1..-1] }
+          database: ->(url) { component(:path).call(url)[1..-1] },
+          reconnect: Proc.new { true }
         }.reduce({}) do |configuration, (key, value)|
           configuration.update(key => value.call(@url))
         end

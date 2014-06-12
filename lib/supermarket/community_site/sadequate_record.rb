@@ -1,5 +1,4 @@
 require 'active_support/core_ext/string/filters'
-require 'supermarket/community_site/pool'
 
 module Supermarket
   module CommunitySite
@@ -72,7 +71,7 @@ module Supermarket
               WHERE #{foreign_key} = %d ORDER BY id
             }.squish
 
-            Pool.with do |connection|
+            CommunitySite.pool.with do |connection|
               connection.query(query_template % [fields, id]).to_a
             end.map do |record_data|
               real_record_type.new(record_data)
@@ -115,7 +114,7 @@ module Supermarket
               WHERE id = %d
             }.squish
 
-            record_data = Pool.with do |connection|
+            record_data = CommunitySite.pool.with do |connection|
               connection.query(query_template % [fields, send(foreign_key)]).to_a
             end.first
 
@@ -163,7 +162,7 @@ module Supermarket
               WHERE #{foreign_key} = %d
             }.squish
 
-            record_data = Pool.with do |connection|
+            record_data = CommunitySite.pool.with do |connection|
               connection.query(query_template % [fields, self.id]).to_a
             end.first
 
@@ -205,7 +204,7 @@ module Supermarket
           end
 
           define_method(:record_at_offset) do |offset|
-            Pool.with do |connection|
+            CommunitySite.pool.with do |connection|
               connection.query(offset_query(offset)).to_a.first
             end
           end
@@ -230,7 +229,7 @@ module Supermarket
           define_method(:count) do
             query = "SELECT COUNT(*) as cnt FROM #{name}"
 
-            Pool.with do |connection|
+            CommunitySite.pool.with do |connection|
               connection.query(query).to_a.first['cnt']
             end
           end
@@ -241,7 +240,7 @@ module Supermarket
               id
             ]
 
-            data = Pool.with do |connection|
+            data = CommunitySite.pool.with do |connection|
               connection.query(query)
             end.to_a.first
 
