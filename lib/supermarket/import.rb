@@ -15,10 +15,20 @@ module Supermarket
     end
 
     def self.report(e)
-      Raven.capture_exception(e)
+      raven_options = {}
+
+      if e.respond_to?(:record) && e.record.is_a?(::CookbookVersion)
+        if e.record.errors[:tarball_content_type]
+          raven_options[:extra] = {
+            tarball_content_type: e.record.tarball_content_type
+          }
+        end
+      end
+
+      Raven.capture_exception(e, raven_options)
 
       debug do
-        message_header = "#{e.class}: #{e.message}"
+        message_header = "#{e.class}: #{e.message}\n  #{raven_options.inspect}"
         message_body = ([message_header] + e.backtrace).join("\n  ")
 
         yield message_body
