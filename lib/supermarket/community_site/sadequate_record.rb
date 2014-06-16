@@ -203,6 +203,27 @@ module Supermarket
             name
           end
 
+          #
+          # A totally not-robust way to query based on arbitrary field values
+          #
+          define_method(:query) do |params|
+            conditions = params.map do |field, value|
+              "`#{field}`='#{value}'"
+            end
+
+            query = "SELECT %s FROM %s WHERE %s ORDER BY id" % [
+              real_record_type.sadequate_sanitized_fields.join(', '),
+              name,
+              conditions.join(' AND ')
+            ]
+
+            CommunitySite.pool.with do |connection|
+              connection.query(query).to_a.map do |data|
+                real_record_type.new(data)
+              end
+            end
+          end
+
           define_method(:record_at_offset) do |offset|
             CommunitySite.pool.with do |connection|
               connection.query(offset_query(offset)).to_a.first

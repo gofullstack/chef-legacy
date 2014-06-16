@@ -9,7 +9,7 @@ namespace :supermarket do
   cullings = [:users, :cookbooks, :cookbook_following, :cookbook_collaboration].
     map { |c| "cull:#{c}" }
 
-  task :migrate => imports + cullings + ['amend:cookbooks']
+  task :migrate => imports + cullings + ['amend:cookbooks', 'amend:users']
 
   namespace :import do
     #
