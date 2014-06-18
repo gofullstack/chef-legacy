@@ -27,6 +27,17 @@ module Supermarket
 
       include Enumerable
 
+      class UnableToProcessTarball < RuntimeError
+        attr_reader :errors, :cookbook_name, :cookbook_version, :errors
+
+        def initialize(message, cookbook_name, cookbook_version, errors)
+          super(message)
+          @cookbook_name = cookbook_name
+          @cookbook_version = cookbook_version
+          @errors = errors
+        end
+      end
+
       def initialize(record)
         @skip = true
         @record = record
@@ -55,37 +66,46 @@ module Supermarket
         return if @cookbook_version.dependencies_imported?
 
         cookbook_upload_parameters do |parameters|
-          metadata = parameters.metadata
+          if parameters.valid?
+            metadata = parameters.metadata
 
-          metadata.dependencies.each do |name, constraint|
-            constraints = Array(constraint).map do |original|
-              @constraint_updates.reduce(original) do |updated, (old, new)|
-                updated.gsub(old, new)
+            metadata.dependencies.each do |name, constraint|
+              constraints = Array(constraint).map do |original|
+                @constraint_updates.reduce(original) do |updated, (old, new)|
+                  updated.gsub(old, new)
+                end
               end
+
+              safe_constraint = Chef::VersionConstraint.new(constraints)
+
+              yield @cookbook_version.cookbook_dependencies.build(
+                name: name,
+                version_constraint: safe_constraint.to_s,
+                cookbook: ::Cookbook.with_name(name).first
+              )
             end
 
-            safe_constraint = Chef::VersionConstraint.new(constraints)
+            description = [metadata, @cookbook_record].
+              map(&:description).
+              find { |description| description.to_s.strip.present? }
 
-            yield @cookbook_version.cookbook_dependencies.build(
-              name: name,
-              version_constraint: safe_constraint.to_s,
-              cookbook: ::Cookbook.with_name(name).first
+            @cookbook_version.tap do |version|
+              version.assign_attributes(
+                dependencies_imported: true,
+                description: description,
+                readme: parameters.readme.contents.to_s,
+                readme_extension: parameters.readme.extension.to_s
+              )
+
+              yield version
+            end
+          else
+            raise UnableToProcessTarball.new(
+              'Unable to process cookbook version tarball',
+              @cookbook.name,
+              @cookbook_version.version,
+              parameters.errors
             )
-          end
-
-          description = [metadata, @cookbook_record].
-            map(&:description).
-            find { |description| description.to_s.strip.present? }
-
-          @cookbook_version.tap do |version|
-            version.assign_attributes(
-              dependencies_imported: true,
-              description: description,
-              readme: parameters.readme.contents.to_s,
-              readme_extension: parameters.readme.extension.to_s
-            )
-
-            yield version
           end
         end
       end

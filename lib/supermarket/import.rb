@@ -25,6 +25,14 @@ module Supermarket
         end
       end
 
+      if e.is_a?(CookbookVersionDependencies::UnableToProcessTarball)
+        raven_options[:extra] = {
+          cookbook_name: e.cookbook_name,
+          cookbook_version: e.cookbook_version,
+          messages: e.errors.full_messages.join('; ')
+        }
+      end
+
       Raven.capture_exception(e, raven_options)
 
       debug do
