@@ -77,7 +77,9 @@ module Supermarket
         end
 
         cookbook_upload_parameters do |parameters|
-          if parameters.valid?
+          readme_errors = parameters.errors.full_messages.grep(/readme/i)
+
+          if readme_errors.count == parameters.errors.full_messages.count
             metadata = parameters.metadata
 
             metadata.dependencies.each do |name, constraint|
