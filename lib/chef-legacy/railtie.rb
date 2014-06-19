@@ -8,6 +8,7 @@ module ChefLegacy
       load "tasks/supermarket/amend.rake"
       load "tasks/supermarket/cull.rake"
       load "tasks/supermarket/import.rake"
+      load "tasks/supermarket/verify.rake"
     end
   end
 end
