@@ -61,9 +61,20 @@ module Supermarket
         end
       end
 
+      def readonly!
+        @readonly = true
+      end
+
+      def readonly?
+        !!@readonly
+      end
+
       def each
         return if @skip
-        return if @cookbook_version.dependencies_imported?
+
+        if !readonly?
+          return if @cookbook_version.dependencies_imported?
+        end
 
         cookbook_upload_parameters do |parameters|
           if parameters.valid?
@@ -78,11 +89,15 @@ module Supermarket
 
               safe_constraint = Chef::VersionConstraint.new(constraints)
 
-              yield @cookbook_version.cookbook_dependencies.build(
+              dependency = @cookbook_version.cookbook_dependencies.build(
                 name: name,
                 version_constraint: safe_constraint.to_s,
                 cookbook: ::Cookbook.with_name(name).first
               )
+
+              dependency.readonly! if readonly?
+
+              yield dependency
             end
 
             description = [metadata, @cookbook_record].
@@ -96,6 +111,8 @@ module Supermarket
                 readme: parameters.readme.contents.to_s,
                 readme_extension: parameters.readme.extension.to_s
               )
+
+              version.readonly! if readonly?
 
               yield version
             end
