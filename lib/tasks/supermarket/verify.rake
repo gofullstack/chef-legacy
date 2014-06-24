@@ -32,6 +32,9 @@ namespace :supermarket do
       batch.update_all(verification_state: 'in_progress')
 
       batch.each do |cookbook_version|
+        operations = []
+        followup = []
+
         Supermarket::Import.debug { progress_bar.increment }
 
         begin
@@ -88,7 +91,11 @@ namespace :supermarket do
               Supermarket::Import.report(e) { |m| progress_bar.log(m) }
               Supermarket::Import.debug { progress_bar.decrement }
 
-              cookbook_version.update_attributes!(verification_state: 'failed')
+              followup << lambda do
+                ::CookbookVersion.
+                  where(id: cookbook_version.id).
+                  update_all(verification_state: 'failed')
+              end
 
               raise ActiveRecord::Rollback
             end
@@ -97,8 +104,14 @@ namespace :supermarket do
           Supermarket::Import.report(e) { |m| progress_bar.log(m) }
           Supermarket::Import.debug { progress_bar.decrement }
 
-          cookbook_version.update_attributes!(verification_state: 'failed')
+          followup << lambda do
+            ::CookbookVersion.
+              where(id: cookbook_version.id).
+              update_all(verification_state: 'failed')
+          end
         end
+
+        followup.each(&:call)
       end
 
       Supermarket::Import.debug { progress_bar.stop }
