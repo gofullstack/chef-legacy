@@ -37,7 +37,12 @@ module Supermarket
 
       debug do
         message_header = "#{e.class}: #{e.message}\n  #{raven_options.inspect}"
-        message_body = ([message_header] + e.backtrace).join("\n  ")
+
+        relevant_backtrace = e.backtrace.select do |line|
+          line.include?('supermarket') || line.include?('chef-legacy')
+        end
+
+        message_body = ([message_header] + relevant_backtrace).join("\n  ")
 
         yield message_body
       end
