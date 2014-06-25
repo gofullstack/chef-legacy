@@ -9,10 +9,11 @@ namespace :supermarket do
         where(dependencies_imported: true).
         where('legacy_id IS NOT ?', nil)
 
-      verification_frequency = 8 # every 3 hours: 24 / 3 = 8
+      # each batch should be ~1000 cookbook versions
+      batch_divisor = base_scope.count / 1000
       batch_size = [
-        base_scope.count / verification_frequency,
-        verification_frequency
+        base_scope.count / batch_divisor,
+        batch_divisor
       ].max
 
       batch_scope = base_scope.
